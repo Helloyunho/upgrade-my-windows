@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 from typings.vminfo import VMInfo
 from typing import Literal
 
+from config import os_list
+
 load_dotenv()
 
 
@@ -84,14 +86,18 @@ class MyClient(discord.Client):
         if self.dom:
             self.dom.setMemoryFlags(memory * 1024, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
-    def set_cdrom(self, path: str, type: Literal["cdrom", "floppy"] = "cdrom"):
+    def set_device(
+        self, path: str | None = None, type: Literal["cdrom", "floppy"] = "cdrom"
+    ):
         if self.dom:
             raw_xml = self.dom.XMLDesc()
             xml = minidom.parseString(raw_xml)
             disks = xml.getElementsByTagName("disk")
             for disk in disks:
                 if disk.getAttribute("device") == type:
-                    disk.getElementsByTagName("source")[0].setAttribute("file", path)
+                    disk.getElementsByTagName("source")[0].setAttribute(
+                        "file", path or ""
+                    )
                     self.dom.updateDeviceFlags(
                         disk.toxml("utf8").decode(),
                         libvirt.VIR_DOMAIN_AFFECT_CURRENT
@@ -99,6 +105,22 @@ class MyClient(discord.Client):
                         | libvirt.VIR_DOMAIN_AFFECT_CONFIG,
                     )
                     break
+
+    def set_os(self, os: str):
+        if self.dom:
+            raw_xml = self.dom.metadata(
+                libvirt.VIR_DOMAIN_METADATA_ELEMENT,
+                "http://libosinfo.org/xmlns/libvirt/domain/1.0",
+            )
+            xml = minidom.parseString(raw_xml)
+            osinfo = xml.getElementsByTagName("os")[0]
+            osinfo.setAttribute("id", f"http://microsoft.com/win/{os.lower()}")
+            self.dom.setMetadata(
+                libvirt.VIR_DOMAIN_METADATA_ELEMENT,
+                xml.toxml("utf8").decode(),
+                "libosinfo",
+                "http://libosinfo.org/xmlns/libvirt/domain/1.0",
+            )
 
     def get_current_info(self) -> VMInfo | None:
         if self.dom:
@@ -168,8 +190,18 @@ async def help_command(interaction: discord.Interaction):
         inline=True,
     )
     embed.add_field(
-        name="`/change os:`",
+        name="`/change os os:`",
         value="Changes the vm preset(memory size, cpu core count, etc.) and disc(or floppy disk) image to selected OS.",
+        inline=True,
+    )
+    embed.add_field(
+        name="`/change image type: index:`",
+        value="Changes the disc(or floppy disk) image to selected index. Index starts from 0.",
+        inline=True,
+    )
+    embed.add_field(
+        name="`/eject type:`",
+        value="Ejects the disc(or floppy disk, or both).",
         inline=True,
     )
     embed.add_field(
@@ -237,6 +269,142 @@ async def type_command(interaction: discord.Interaction, text: str):
         await interaction.response.send_message("VM is not running.")
         return
     client.vnc.keyboard.write(text)
+
+
+change_group = app_commands.Group(name="change", description="Change VM settings.")
+
+
+@change_group.command(name="os")
+@app_commands.describe(
+    os="The OS you want to change to.",
+)
+@app_commands.choices(
+    os=[
+        app_commands.Choice(name=f"Windows {os_name.title()}", value=os_name)
+        for os_name in [preset["os"] for preset in os_list]
+    ]
+)
+async def change_os_command(
+    interaction: discord.Interaction,
+    os: str,
+):
+    if not client.vnc:
+        await interaction.response.send_message("VM is not running.")
+        return
+
+    os_preset = next((preset for preset in os_list if preset["os"] == os), None)
+    if not os_preset:
+        await interaction.response.send_message("OS not found.")
+        return
+
+    client.set_vcpus(os_preset["vcpus"])
+    client.set_memory(os_preset["memory"])
+    client.set_os(os)
+    if os_preset["cdrom"]:
+        client.set_device(os_preset["cdrom"][0])
+    else:
+        client.set_device()
+    if os_preset["floppy"]:
+        client.set_device(os_preset["floppy"][0], "floppy")
+    else:
+        client.set_device(type="floppy")
+
+    await interaction.response.send_message("VM has been updated.")
+
+
+@change_group.command(name="image")
+@app_commands.describe(
+    type="The type of the device you want to change.",
+    index="The index of the image you want to change.",
+)
+@app_commands.choices(
+    type=[
+        app_commands.Choice(name="CD-ROM", value="cdrom"),
+        app_commands.Choice(name="Floppy", value="floppy"),
+    ]
+)
+async def change_image_command(
+    interaction: discord.Interaction,
+    type: Literal["cdrom", "floppy"],
+    index: int,
+):
+    if not client.vnc:
+        await interaction.response.send_message("VM is not running.")
+        return
+
+    info = client.get_current_info()
+    if not info:
+        await interaction.response.send_message("VM is not running.")
+        return
+
+    os_preset = next((preset for preset in os_list if preset["os"] == info["os"]), None)
+    if not os_preset:
+        await interaction.response.send_message(
+            "OS not found. Which is impossible. Please contact the developer."
+        )
+        return
+
+    if not os_preset[type]:
+        await interaction.response.send_message(f"{type} image for this OS not found.")
+        return
+    if index >= len(os_preset[type]) or index < 0:  # type: ignore
+        await interaction.response.send_message("Image not found.")
+        return
+    client.set_device(os_preset[type][index])  # type: ignore
+
+    await interaction.response.send_message("Image has been updated.")
+
+
+@change_image_command.autocomplete("index")
+async def change_image_index_autocomplete(
+    interaction: discord.Interaction, current: str
+) -> list[app_commands.Choice[int]]:
+    info = client.get_current_info()
+    if not info:
+        return []
+
+    os_preset = next((preset for preset in os_list if preset["os"] == info["os"]), None)
+    if not os_preset:
+        return []
+
+    type_ = next((option for option in interaction.data["options"] if option["name"] == "type"), None)  # type: ignore
+    if not type_:
+        return []
+    type_: int = type_["value"]  # type: ignore
+
+    content = []
+    for i in range(len(os_preset[type_])):  # type: ignore
+        if str(i).startswith(current):
+            content.append(app_commands.Choice(name=str(i), value=i))
+    return content
+
+
+tree.add_command(change_group)
+
+
+@tree.command(name="eject")
+@app_commands.describe(type="The type of the device you want to eject.")
+@app_commands.choices(
+    type=[
+        app_commands.Choice(name="CD-ROM", value="cdrom"),
+        app_commands.Choice(name="Floppy", value="floppy"),
+        app_commands.Choice(name="Both", value="both"),
+    ]
+)
+async def eject_command(
+    interaction: discord.Interaction, type: Literal["cdrom", "floppy", "both"]
+):
+    if not client.vnc:
+        await interaction.response.send_message("VM is not running.")
+        return
+
+    if type == "both":
+        client.set_device(None)
+        client.set_device(None, "floppy")
+        await interaction.response.send_message("Both devices have been ejected.")
+    else:
+        client.set_device(None, type)
+        await interaction.response.send_message("Device has been ejected.")
 
 
 client.run(os.getenv("DISCORD_TOKEN"))  # type: ignore
