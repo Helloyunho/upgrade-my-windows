@@ -4,6 +4,7 @@ import asyncvnc
 import libvirt
 import io
 import os
+from pathlib import Path
 from PIL import Image
 from discord import app_commands
 from xml.dom import minidom
@@ -21,12 +22,14 @@ class MyClient(discord.Client):
     virt: libvirt.virConnect | None
     dom: libvirt.virDomain | None
     vnc: asyncvnc.Client | None
+    image_path: Path
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.virt = None
         self.dom = None
         self.vnc = None
+        self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
 
     async def connect_qemu(self, reconnect=False):
         if self.virt or self.dom or self.vnc:
@@ -90,6 +93,7 @@ class MyClient(discord.Client):
         self, path: str | None = None, type: Literal["cdrom", "floppy"] = "cdrom"
     ):
         if self.dom:
+            path = str(self.image_path / self.get_current_info()["os"] / path) if path else None  # type: ignore
             raw_xml = self.dom.XMLDesc()
             xml = minidom.parseString(raw_xml)
             disks = xml.getElementsByTagName("disk")
@@ -133,7 +137,6 @@ class MyClient(discord.Client):
                 xml.getElementsByTagName("libosinfo:os")[0]
                 .getAttribute("id")
                 .split("/")[-1]
-                .title()
             )
             disks = xml.getElementsByTagName("disk")
             cdrom_path = None
@@ -195,8 +198,8 @@ async def help_command(interaction: discord.Interaction):
         inline=True,
     )
     embed.add_field(
-        name="`/change image type: index:`",
-        value="Changes the disc(or floppy disk) image to selected index. Index starts from 0.",
+        name="`/change image type: image:`",
+        value="Changes the disc(or floppy disk) image to selected image.",
         inline=True,
     )
     embed.add_field(
@@ -234,7 +237,11 @@ async def info_command(interaction: discord.Interaction):
     embed.add_field(name="CPU", value=f"{info['cpu']} cores", inline=True)
     embed.add_field(name="CD-ROM", value=info["cdrom"] or "None", inline=True)
     embed.add_field(name="Floppy", value=info["floppy"] or "None", inline=True)
-    embed.add_field(name="OS", value=info["os"], inline=True)
+    embed.add_field(
+        name="OS",
+        value=f"Windows {info['os'].title() if info['os'] == 'vista' else info['os'].upper()}",
+        inline=True,
+    )
     await interaction.response.send_message(embed=embed)
 
 
@@ -280,7 +287,10 @@ change_group = app_commands.Group(name="change", description="Change VM settings
 )
 @app_commands.choices(
     os=[
-        app_commands.Choice(name=f"Windows {os_name.title()}", value=os_name)
+        app_commands.Choice(
+            name=f"Windows {os_name.title() if os_name == 'vista' else os_name.upper()}",
+            value=os_name,
+        )
         for os_name in [preset["os"] for preset in os_list]
     ]
 )
@@ -315,7 +325,7 @@ async def change_os_command(
 @change_group.command(name="image")
 @app_commands.describe(
     type="The type of the device you want to change.",
-    index="The index of the image you want to change.",
+    image="The image you want to change.",
 )
 @app_commands.choices(
     type=[
@@ -326,7 +336,7 @@ async def change_os_command(
 async def change_image_command(
     interaction: discord.Interaction,
     type: Literal["cdrom", "floppy"],
-    index: int,
+    image: str,
 ):
     if not client.vnc:
         await interaction.response.send_message("VM is not running.")
@@ -347,7 +357,9 @@ async def change_image_command(
     if not os_preset[type]:
         await interaction.response.send_message(f"{type} image for this OS not found.")
         return
-    if index >= len(os_preset[type]) or index < 0:  # type: ignore
+    try:
+        index = os_preset[type].index(image)  # type: ignore
+    except ValueError:
         await interaction.response.send_message("Image not found.")
         return
     client.set_device(os_preset[type][index])  # type: ignore
@@ -355,10 +367,10 @@ async def change_image_command(
     await interaction.response.send_message("Image has been updated.")
 
 
-@change_image_command.autocomplete("index")
-async def change_image_index_autocomplete(
+@change_image_command.autocomplete("image")
+async def change_image_image_autocomplete(
     interaction: discord.Interaction, current: str
-) -> list[app_commands.Choice[int]]:
+) -> list[app_commands.Choice[str]]:
     info = client.get_current_info()
     if not info:
         return []
@@ -370,13 +382,16 @@ async def change_image_index_autocomplete(
     type_ = next((option for option in interaction.data["options"] if option["name"] == "type"), None)  # type: ignore
     if not type_:
         return []
-    type_: int = type_["value"]  # type: ignore
+    type_: str = type_["value"]  # type: ignore
 
-    content = []
-    for i in range(len(os_preset[type_])):  # type: ignore
-        if str(i).startswith(current):
-            content.append(app_commands.Choice(name=str(i), value=i))
-    return content
+    if not os_preset[type_]:
+        return []
+
+    return [
+        app_commands.Choice(name=image, value=image)
+        for image in os_preset[type_]
+        if image.lower().startswith(current.lower())
+    ]
 
 
 tree.add_command(change_group)
