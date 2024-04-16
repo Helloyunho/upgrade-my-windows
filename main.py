@@ -1,6 +1,6 @@
 import asyncio
 import discord
-import asyncvnc
+from vncdotool.client import VNCDoToolClient
 import libvirt
 import io
 import os
@@ -21,7 +21,7 @@ load_dotenv()
 class MyClient(discord.Client):
     virt: libvirt.virConnect | None
     dom: libvirt.virDomain | None
-    vnc: asyncvnc.Client | None
+    vnc: VNCDoToolClient | None
     image_path: Path
 
     def __init__(self, *args, **kwargs):
@@ -39,36 +39,52 @@ class MyClient(discord.Client):
                 return
         self.virt = libvirt.open()
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
+
+    async def connect_vnc(self, reconnect=False):
+        if self.vnc:
+            if reconnect:
+                await self.disconnect_vnc()
+            else:
+                return
         if not self.vnc:
+            self.vnc = VNCDoToolClient()
             reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
-            self.vnc = await asyncvnc.Client.create(reader, writer, None, None, None)
+            await self.vnc.connect(reader, writer)
+
+    async def disconnect_vnc(self):
+        if self.vnc:
+            await self.vnc.disconnect()
+            self.vnc = None
 
     async def shutdown_domain(self):
         if self.dom and self.dom.isActive():
+            await self.disconnect_vnc()
             self.dom.shutdown()
 
     async def start_domain(self):
         if self.dom and not self.dom.isActive():
             self.dom.create()
+            await self.connect_vnc()
 
     async def force_shutdown_domain(self):
         if self.dom and self.dom.isActive():
+            await self.disconnect_vnc()
             self.dom.destroy()
 
     async def disconnect_qemu(self):
+        if self.vnc:
+            await self.disconnect_vnc()
         if self.dom:
             self.dom = None
         if self.virt:
             self.virt.close()
             self.virt = None
-        if self.vnc and self.vnc.writer:
-            self.vnc.writer.close()
-            await self.vnc.writer.wait_closed()
-            self.vnc = None
 
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
         await self.connect_qemu()
+        await self.start_domain()
+        await self.connect_vnc()
 
     async def on_disconnect(self):
         await self.disconnect_qemu()
@@ -77,9 +93,7 @@ class MyClient(discord.Client):
         if not self.vnc:
             return None
 
-        pixels = await self.vnc.screenshot()
-        image = Image.fromarray(pixels)
-        return image
+        return self.vnc.screen
 
     def set_vcpus(self, vcpus: int):
         if self.dom:
@@ -175,7 +189,7 @@ client = MyClient(intents=intents)
 tree = app_commands.CommandTree(client)
 
 
-@tree.command(name="help")
+@tree.command(name="help", description="Shows the help message.")
 async def help_command(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Upgrade My Windows",
@@ -194,7 +208,7 @@ async def help_command(interaction: discord.Interaction):
     )
     embed.add_field(
         name="`/change os os:`",
-        value="Changes the vm preset(memory size, cpu core count, etc.) and disc(or floppy disk) image to selected OS.",
+        value="Changes the vm preset(memory size, cpu core count, etc.) and disc(or floppy disk) image selection to selected OS.",
         inline=True,
     )
     embed.add_field(
@@ -218,10 +232,10 @@ async def help_command(interaction: discord.Interaction):
         inline=True,
     )
     embed.add_field(name="`/help`", value="Shows this help message.", inline=True)
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@tree.command(name="info")
+@tree.command(name="info", description="Shows the current VM information.")
 async def info_command(interaction: discord.Interaction):
     info = client.get_current_info()
     if not info:
@@ -245,7 +259,9 @@ async def info_command(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@tree.command(name="screenshot")
+@tree.command(
+    name="screenshot", description="Takes a screenshot of the VM and sends it to you."
+)
 async def screenshot_command(interaction: discord.Interaction):
     img = await client.get_screen_img()
     if not img:
@@ -262,26 +278,36 @@ async def screenshot_command(interaction: discord.Interaction):
     img.close()
 
 
-@tree.command(name="click")
+@tree.command(name="click", description="Clicks the element.")
 @app_commands.describe(prompt="Describe the element you want to click.")
 async def click_command(interaction: discord.Interaction, prompt: str):
     # TODO: Ask the AI to click the element
     await interaction.response.send_message("Not implemented yet.")
 
 
-@tree.command(name="type")
+@tree.command(
+    name="type",
+    description="Types the text like you would type on your keyboard. Nothing special...",
+)
 @app_commands.describe(text="The text you want to type.")
 async def type_command(interaction: discord.Interaction, text: str):
     if not client.vnc:
         await interaction.response.send_message("VM is not running.")
         return
-    client.vnc.keyboard.write(text)
+    for char in text:
+        await client.vnc.keyDown(char)
+        await client.vnc.keyUp(char)
+
+    await interaction.response.send_message("Text has been typed.")
 
 
 change_group = app_commands.Group(name="change", description="Change VM settings.")
 
 
-@change_group.command(name="os")
+@change_group.command(
+    name="os",
+    description="Changes the vm preset and disk image selection to selected OS.",
+)
 @app_commands.describe(
     os="The OS you want to change to.",
 )
@@ -322,7 +348,10 @@ async def change_os_command(
     await interaction.response.send_message("VM has been updated.")
 
 
-@change_group.command(name="image")
+@change_group.command(
+    name="image",
+    description="Changes the disc(or floppy disk) image to selected image.",
+)
 @app_commands.describe(
     type="The type of the device you want to change.",
     image="The image you want to change.",
@@ -397,7 +426,7 @@ async def change_image_image_autocomplete(
 tree.add_command(change_group)
 
 
-@tree.command(name="eject")
+@tree.command(name="eject", description="Ejects the disc(or floppy disk, or both).")
 @app_commands.describe(type="The type of the device you want to eject.")
 @app_commands.choices(
     type=[
