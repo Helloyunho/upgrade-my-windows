@@ -46,10 +46,10 @@ class MyClient(discord.Client):
                 await self.disconnect_vnc()
             else:
                 return
-        if not self.vnc:
-            self.vnc = VNCDoToolClient()
-            reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
-            await self.vnc.connect(reader, writer)
+        self.vnc = VNCDoToolClient()
+        reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
+        # reader, writer = await asyncio.open_connection("localhost", 5900)
+        await self.vnc.connect(reader, writer)
 
     async def disconnect_vnc(self):
         if self.vnc:
@@ -93,6 +93,7 @@ class MyClient(discord.Client):
         if not self.vnc:
             return None
 
+        await self.vnc.refreshScreen()
         return self.vnc.screen
 
     def set_vcpus(self, vcpus: int):
@@ -268,14 +269,12 @@ async def screenshot_command(interaction: discord.Interaction):
         await interaction.response.send_message("VM is not running.")
         return
 
-    img_bytes = io.BytesIO()
-    img.save(img_bytes, format="PNG")
-
-    await interaction.response.send_message(
-        file=discord.File(img_bytes, "screenshot.png")
-    )
-    img_bytes.close()
-    img.close()
+    with io.BytesIO() as image_binary:
+        img.save(image_binary, format="PNG")
+        image_binary.seek(0)
+        await interaction.response.send_message(
+            file=discord.File(image_binary, filename="screenshot.png")
+        )
 
 
 @tree.command(name="click", description="Clicks the element.")
