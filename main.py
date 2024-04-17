@@ -22,6 +22,7 @@ class MyClient(discord.Client):
     virt: libvirt.virConnect | None
     dom: libvirt.virDomain | None
     vnc: VNCDoToolClient | None
+    vnc_loop_task: asyncio.Task | None
     image_path: Path
 
     def __init__(self, *args, **kwargs):
@@ -50,7 +51,7 @@ class MyClient(discord.Client):
         reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
         # reader, writer = await asyncio.open_connection("localhost", 5900)
         await self.vnc.connect(reader, writer)
-        asyncio.create_task(self.vnc_refresh_loop())
+        self.vnc_loop_task = asyncio.create_task(self.vnc_refresh_loop())
 
     async def vnc_refresh_loop(self):
         while self.vnc:
@@ -58,6 +59,9 @@ class MyClient(discord.Client):
             await self.vnc.refreshScreen()
 
     async def disconnect_vnc(self):
+        if self.vnc_loop_task:
+            self.vnc_loop_task.cancel()
+            self.vnc_loop_task = None
         if self.vnc:
             await self.vnc.disconnect()
             self.vnc = None
