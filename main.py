@@ -50,6 +50,12 @@ class MyClient(discord.Client):
         reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
         # reader, writer = await asyncio.open_connection("localhost", 5900)
         await self.vnc.connect(reader, writer)
+        asyncio.create_task(self.vnc_refresh_loop())
+
+    async def vnc_refresh_loop(self):
+        while self.vnc:
+            await asyncio.sleep(1 / 60)
+            await self.vnc.refreshScreen()
 
     async def disconnect_vnc(self):
         if self.vnc:
@@ -93,7 +99,6 @@ class MyClient(discord.Client):
         if not self.vnc:
             return None
 
-        await self.vnc.refreshScreen()
         return self.vnc.screen
 
     def set_vcpus(self, vcpus: int):
