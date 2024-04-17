@@ -56,6 +56,9 @@ class MyClient(discord.Client):
     async def vnc_refresh_loop(self):
         while self.vnc:
             await asyncio.sleep(1 / 60)
+            if self.vnc.writer.is_closing():
+                self.vnc = None
+                break
             await self.vnc.refreshScreen()
 
     async def disconnect_vnc(self):
@@ -123,6 +126,8 @@ class MyClient(discord.Client):
             disks = xml.getElementsByTagName("disk")
             for disk in disks:
                 if disk.getAttribute("device") == type:
+                    if not disk.getElementsByTagName("source"):
+                        disk.appendChild(xml.createElement("source"))
                     disk.getElementsByTagName("source")[0].setAttribute(
                         "file", path or ""
                     )
@@ -167,6 +172,8 @@ class MyClient(discord.Client):
             floppy = None
             for disk in disks:
                 if disk.getAttribute("device") == "cdrom" and cdrom_path is None:
+                    if not disk.getElementsByTagName("source"):
+                        continue
                     cdrom_path = (
                         disk.getElementsByTagName("source")[0]
                         .getAttribute("file")
@@ -174,6 +181,8 @@ class MyClient(discord.Client):
                     )
                     continue
                 if disk.getAttribute("device") == "floppy" and floppy is None:
+                    if not disk.getElementsByTagName("source"):
+                        continue
                     floppy = (
                         disk.getElementsByTagName("source")[0]
                         .getAttribute("file")
@@ -416,7 +425,7 @@ async def change_image_image_autocomplete(
     if not os_preset:
         return []
 
-    type_ = next((option for option in interaction.data["options"] if option["name"] == "type"), None)  # type: ignore
+    type_ = next((option for option in interaction.data["options"][0]["options"] if option["name"] == "type"), None)  # type: ignore
     if not type_:
         return []
     type_: str = type_["value"]  # type: ignore
