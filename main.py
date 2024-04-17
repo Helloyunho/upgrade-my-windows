@@ -114,6 +114,7 @@ class MyClient(discord.Client):
 
     def set_memory(self, memory: int):
         if self.dom:
+            self.dom.setMaxMemory(memory * 1024)
             self.dom.setMemoryFlags(memory * 1024, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
     def set_device(
