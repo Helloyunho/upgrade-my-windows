@@ -8,10 +8,10 @@ from discord import app_commands
 
 BACKTICK_RE = re.compile(r"(?<!\\)(?:\\\\)*`([^`\\]*(?:\\.[^`\\]*)*)`")
 
-EXTENDED_KEYMAP = KEYMAP.copy()
+BACKSLASH_KEYMAP = dict()
 
 for value in KEYMAP.values():
-    EXTENDED_KEYMAP[chr(value & 0xFF)] = value
+    BACKSLASH_KEYMAP[chr(value & 0xFF)] = value
 
 
 class Keyboard(commands.Cog):
@@ -32,6 +32,7 @@ class Keyboard(commands.Cog):
 
         for match, text in zip(matches, texts):
             for char in text:
+                char = chr(BACKSLASH_KEYMAP[char]) if char in BACKSLASH_KEYMAP else char
                 if key_down:
                     await self.bot.vnc.keyDown(char)
                 if key_up:
@@ -46,6 +47,7 @@ class Keyboard(commands.Cog):
 
         if len(texts) > len(matches):
             for char in texts[-1]:
+                char = chr(BACKSLASH_KEYMAP[char]) if char in BACKSLASH_KEYMAP else char
                 if key_down:
                     await self.bot.vnc.keyDown(char)
                 if key_up:
