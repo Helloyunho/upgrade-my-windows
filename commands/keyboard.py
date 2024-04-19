@@ -8,7 +8,9 @@ from discord import app_commands
 
 BACKTICK_RE = re.compile(r"(?<!\\)(?:\\\\)*`([^`\\]*(?:\\.[^`\\]*)*)`")
 
-BACKSLASH_KEYMAP = dict()
+BACKSLASH_KEYMAP = {
+    "\n": 0xFF0D,
+}
 
 for value in KEYMAP.values():
     BACKSLASH_KEYMAP[chr(value & 0xFF)] = value
