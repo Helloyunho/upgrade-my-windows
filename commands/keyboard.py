@@ -82,9 +82,10 @@ class Keyboard(commands.Cog):
             await interaction.response.send_message("VM is not running.")
             return
 
+        await interaction.response.defer()
         await self.key_press(text)
 
-        await interaction.response.send_message("Text has been typed.")
+        await interaction.followup.send("Text has been typed.")
 
     key_group = app_commands.Group(
         name="key", description="Presses(or depresses) a key."
@@ -97,9 +98,10 @@ class Keyboard(commands.Cog):
             await interaction.response.send_message("VM is not running.")
             return
 
+        await interaction.response.defer()
         await self.key_press(key, key_up=False)
 
-        await interaction.response.send_message("Key has been pressed.")
+        await interaction.followup.send("Key has been pressed.")
 
     @key_group.command(name="up", description="Depresses a key.")
     @app_commands.describe(key="The key you want to depress.")
@@ -108,9 +110,10 @@ class Keyboard(commands.Cog):
             await interaction.response.send_message("VM is not running.")
             return
 
+        await interaction.response.defer()
         await self.key_press(key, key_down=False)
 
-        await interaction.response.send_message("Key has been depressed.")
+        await interaction.followup.send("Key has been depressed.")
 
 
 async def setup(bot):
