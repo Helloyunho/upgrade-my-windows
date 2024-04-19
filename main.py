@@ -166,7 +166,7 @@ class UpgradeMyWindowsBot(commands.Bot):
             raw_xml = self.dom.XMLDesc()
             xml = minidom.parseString(raw_xml)
             os = (
-                xml.getElementsByTagName("liosinfo:os")[0]
+                xml.getElementsByTagName("libosinfo:os")[0]
                 .getAttribute("id")
                 .split("/")[-1]
             )
