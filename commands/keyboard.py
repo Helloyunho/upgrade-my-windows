@@ -8,6 +8,11 @@ from discord import app_commands
 
 BACKTICK_RE = re.compile(r"(?<!\\)(?:\\\\)*`([^`\\]*(?:\\.[^`\\]*)*)`")
 
+EXTENDED_KEYMAP = KEYMAP.copy()
+
+for value in KEYMAP.values():
+    EXTENDED_KEYMAP[chr(value & 0xFF)] = value
+
 
 class Keyboard(commands.Cog):
     def __init__(self, bot):
