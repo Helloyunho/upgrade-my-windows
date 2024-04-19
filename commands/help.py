@@ -51,3 +51,7 @@ class Help(commands.Cog):
         )
         embed.add_field(name="`/help`", value="Shows this help message.", inline=True)
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+async def setup(bot):
+    await bot.add_cog(Help(bot))

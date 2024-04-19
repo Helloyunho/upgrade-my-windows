@@ -136,3 +136,7 @@ class Change(commands.Cog):
             for image in os_preset[type_]
             if image.lower().startswith(current.lower())
         ]
+
+
+async def setup(bot):
+    await bot.add_cog(Change(bot))

@@ -34,3 +34,7 @@ class Eject(commands.Cog):
         else:
             self.bot.set_device(None, type)
             await interaction.response.send_message("Device has been ejected.")
+
+
+async def setup(bot):
+    await bot.add_cog(Eject(bot))

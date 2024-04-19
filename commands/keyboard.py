@@ -85,3 +85,7 @@ class Keyboard(commands.Cog):
         await self.key_press(key, key_down=False)
 
         await interaction.response.send_message("Key has been depressed.")
+
+
+async def setup(bot):
+    await bot.add_cog(Keyboard(bot))

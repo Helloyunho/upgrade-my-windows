@@ -12,3 +12,7 @@ class Click(commands.Cog):
     async def click_command(self, interaction: discord.Interaction, prompt: str):
         # TODO: Ask the AI to click the element
         await interaction.response.send_message("Not implemented yet.")
+
+
+async def setup(bot):
+    await bot.add_cog(Click(bot))

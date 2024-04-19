@@ -24,3 +24,7 @@ class Screenshot(commands.Cog):
             await interaction.response.send_message(
                 file=discord.File(image_binary, filename="screenshot.png")
             )
+
+
+async def setup(bot):
+    await bot.add_cog(Screenshot(bot))
