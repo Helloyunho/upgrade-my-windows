@@ -7,6 +7,7 @@ from discord import app_commands
 
 
 BACKTICK_RE = re.compile(r"(?<=(?<!\\)(?:\\\\)*)`((?:[^`\\]|\\.)*)`")
+HYPEN_RE = re.compile(r"(?<=(?<!\\)(?:\\\\)*)-")
 
 BACKSLASH_KEYMAP = {
     "\n": 0xFF0D,
@@ -48,7 +49,7 @@ class Keyboard(commands.Cog):
         for match, text in zip(matches, texts):
             await self.char_split_press(text, key_down, key_up)
 
-            match_sequences = match.split(r"(?<=(?<!\\)(?:\\\\)*)-")
+            match_sequences = HYPEN_RE.split(match)
             length = len(match_sequences)
             for i, sequence in enumerate(match_sequences * 2):
                 converted = KEYMAP.get(sequence)
