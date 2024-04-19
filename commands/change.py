@@ -55,7 +55,9 @@ class Change(commands.Cog):
         else:
             self.bot.set_device(type="floppy")
 
-        await interaction.response.send_message("VM has been updated.")
+        await interaction.response.send_message(
+            "VM has been updated. Restart the VM to apply the cpu and memory changes."
+        )
 
     @change_group.command(
         name="image",
@@ -105,7 +107,7 @@ class Change(commands.Cog):
         except ValueError:
             await interaction.response.send_message("Image not found.")
             return
-        self.bot.set_device(os_preset[type][index])  # type: ignore
+        self.bot.set_device(os_preset[type][index], type)  # type: ignore
 
         await interaction.response.send_message("Image has been updated.")
 

@@ -116,8 +116,11 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     def set_memory(self, memory: int):
         if self.dom:
-            self.dom.setMaxMemory(memory * 1024)
-            self.dom.setMemoryFlags(memory * 1024, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+            self.dom.setMemoryFlags(
+                memory,
+                libvirt.VIR_DOMAIN_AFFECT_CONFIG | libvirt.VIR_DOMAIN_MEM_MAXIMUM,
+            )
+            self.dom.setMemoryFlags(memory, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
     def set_device(
         self, path: str | None = None, type: Literal["cdrom", "floppy"] = "cdrom"
@@ -196,7 +199,7 @@ class UpgradeMyWindowsBot(commands.Bot):
                     break
 
             return {
-                "memory": memsize // 1024,
+                "memory": memsize / 1024,
                 "cpu": vcpus,
                 "cdrom": cdrom_path,
                 "floppy": floppy,
