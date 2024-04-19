@@ -26,25 +26,25 @@ class Keyboard(commands.Cog):
         ]
 
         for match, text in zip(matches, texts):
-            for char in match:
+            for char in text:
                 if key_down:
                     await self.bot.vnc.keyDown(char)
                 if key_up:
                     await self.bot.vnc.keyUp(char)
 
-            match = KEYMAP.get(text)
+            match = KEYMAP.get(match)
             if match:
                 if key_down:
                     await self.bot.vnc.keyDown(chr(match))
                 if key_up:
                     await self.bot.vnc.keyUp(chr(match))
 
-        # type the last text
-        for char in texts[-1]:
-            if key_down:
-                await self.bot.vnc.keyDown(char)
-            if key_up:
-                await self.bot.vnc.keyUp(char)
+        if len(texts) > len(matches):
+            for char in texts[-1]:
+                if key_down:
+                    await self.bot.vnc.keyDown(char)
+                if key_up:
+                    await self.bot.vnc.keyUp(char)
 
     @app_commands.command(
         name="type",
