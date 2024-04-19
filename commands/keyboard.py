@@ -1,12 +1,12 @@
 import codecs
 import discord
-import re
+import regex as re
 from vncdotool.client import KEYMAP
 from discord.ext import commands
 from discord import app_commands
 
 
-BACKTICK_RE = re.compile(r"(?<!\\)(?:\\\\)*`([^`\\]*(?:\\.[^`\\]*)*)`")
+BACKTICK_RE = re.compile(r"(?<=(?<!\\)(?:\\\\)*)`((?:[^`\\]|\\.)*)`")
 
 BACKSLASH_KEYMAP = {
     "\n": 0xFF0D,
@@ -20,6 +20,19 @@ class Keyboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def char_split_press(
+        self, text: str, key_down: bool = True, key_up: bool = True
+    ):
+        if not self.bot.vnc:
+            return
+
+        for char in text:
+            char = chr(BACKSLASH_KEYMAP[char]) if char in BACKSLASH_KEYMAP else char
+            if key_down:
+                await self.bot.vnc.keyDown(char)
+            if key_up:
+                await self.bot.vnc.keyUp(char)
+
     async def key_press(self, text: str, key_down: bool = True, key_up: bool = True):
         if not self.bot.vnc:
             return
@@ -29,31 +42,29 @@ class Keyboard(commands.Cog):
         # split backticks and escape backslashes
         texts = [
             codecs.escape_decode(text.encode("utf-8"))[0].decode("utf-8")  # type: ignore - escape_decode returns Tuple[bytes, int]
-            for text in BACKTICK_RE.split(text)
+            for text in BACKTICK_RE.split(text)[::2]
         ]
 
         for match, text in zip(matches, texts):
-            for char in text:
-                char = chr(BACKSLASH_KEYMAP[char]) if char in BACKSLASH_KEYMAP else char
-                if key_down:
-                    await self.bot.vnc.keyDown(char)
-                if key_up:
-                    await self.bot.vnc.keyUp(char)
+            await self.char_split_press(text, key_down, key_up)
 
-            match = KEYMAP.get(match)
-            if match:
-                if key_down:
-                    await self.bot.vnc.keyDown(chr(match))
-                if key_up:
-                    await self.bot.vnc.keyUp(chr(match))
+            match_sequences = match.split(r"(?<=(?<!\\)(?:\\\\)*)-")
+            length = len(match_sequences)
+            for i, sequence in enumerate(match_sequences * 2):
+                converted = KEYMAP.get(sequence)
+                if converted:
+                    if key_down and (i - length) < 0:
+                        await self.bot.vnc.keyDown(chr(converted))
+                    elif key_up and (i - length) >= 0:
+                        await self.bot.vnc.keyUp(chr(converted))
+                else:
+                    if key_down and (i - length) < 0:
+                        await self.char_split_press(sequence, key_down, False)
+                    elif key_up and (i - length) >= 0:
+                        await self.char_split_press(sequence, False, key_up)
 
         if len(texts) > len(matches):
-            for char in texts[-1]:
-                char = chr(BACKSLASH_KEYMAP[char]) if char in BACKSLASH_KEYMAP else char
-                if key_down:
-                    await self.bot.vnc.keyDown(char)
-                if key_up:
-                    await self.bot.vnc.keyUp(char)
+            await self.char_split_press(texts[-1], key_down, key_up)
 
     @app_commands.command(
         name="type",
