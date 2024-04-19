@@ -207,7 +207,7 @@ class UpgradeMyWindowsBot(commands.Bot):
 
 
 intents = discord.Intents.default()
-client = UpgradeMyWindowsBot(intents=intents)
+client = UpgradeMyWindowsBot("aaaaaaaaaaaaaaaaa", intents=intents)
 
 
 client.run(os.getenv("DISCORD_TOKEN"))  # type: ignore
