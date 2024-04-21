@@ -12,10 +12,14 @@ HYPEN_RE = re.compile(r"(?<=(?<!\\)(?:\\\\)*)-")
 
 BACKSLASH_KEYMAP = {
     "\n": 0xFF0D,
+    "\t": 0xFF09,
+    "\r": 0xFF0D,
+    "\b": 0xFF08,
+    "\x1b": 0xFF1B,
 }
 
 for value in KEYMAP.values():
-    BACKSLASH_KEYMAP[chr(value & 0xFF)] = value
+    BACKSLASH_KEYMAP[chr(value)] = value
 
 
 class Keyboard(commands.Cog):
