@@ -13,7 +13,16 @@ from dotenv import load_dotenv
 from typing import Literal
 from typings.vminfo import VMInfo
 
-COMMANDS = ["change", "click", "eject", "help", "info", "keyboard", "screenshot"]
+COMMANDS = [
+    "admin",
+    "change",
+    "click",
+    "eject",
+    "help",
+    "info",
+    "keyboard",
+    "screenshot",
+]
 
 load_dotenv()
 
