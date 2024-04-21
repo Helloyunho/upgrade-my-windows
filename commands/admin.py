@@ -16,8 +16,7 @@ class Admin(commands.Cog):
     @is_me()
     async def sync_command(self, interaction: discord.Interaction):
         await self.bot.tree.sync()
-        await self.bot.tree.copy_global_to(guild=discord.Object(id=interaction.guild_id))  # type: ignore
-        await self.bot.tree.sync()
+        self.bot.tree.copy_global_to(guild=discord.Object(id=interaction.guild_id))  # type: ignore
         await interaction.response.send_message("Commands synced.")
 
 
