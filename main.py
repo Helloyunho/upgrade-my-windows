@@ -16,7 +16,7 @@ from typings.vminfo import VMInfo
 COMMANDS = [
     "admin",
     "change",
-    "click",
+    "mouse",
     "eject",
     "help",
     "info",
