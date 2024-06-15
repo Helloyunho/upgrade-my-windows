@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+import asyncio
 
 from utils.is_me import is_me
 
@@ -18,6 +19,18 @@ class Admin(commands.Cog):
         await self.bot.tree.sync()
         self.bot.tree.copy_global_to(guild=discord.Object(id=interaction.guild_id))  # type: ignore
         await interaction.response.send_message("Commands synced.")
+
+    @app_commands.command(
+        name="reboot",
+        description="Reboots the VM.",
+    )
+    @is_me()
+    async def reboot_command(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await self.bot.force_shutdown_domain()
+        await asyncio.sleep(2)
+        await self.bot.start_domain()
+        await interaction.followup.send("Restarted the VM.")
 
 
 async def setup(bot):

@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+import asyncio
 
 
 MOUSE_BUTTONS = {"left": 1, "middle": 2, "right": 3}
@@ -27,7 +28,10 @@ class Mouse(commands.Cog):
         # TODO: Ask the AI to move to the element
         await interaction.response.send_message("Not implemented yet.")
 
-    @move_group.command(name="xy", description="Moves the mouse using XY coordinates.")
+    @move_group.command(
+        name="xy",
+        description="Moves the mouse using XY coordinates. (0, 0) is the top-left corner.",
+    )
     @app_commands.describe(x="The X coordinate.", y="The Y coordinate.")
     async def move_xy_command(self, interaction: discord.Interaction, x: int, y: int):
         if not self.bot.vnc:
@@ -61,7 +65,9 @@ class Mouse(commands.Cog):
             return
 
         await interaction.response.defer()
-        await self.bot.vnc.mouseClick(button_code)
+        await self.bot.vnc.mouseDown(button_code)
+        await asyncio.sleep(0.001)
+        await self.bot.vnc.mouseUp(button_code)
 
         await interaction.followup.send("Clicked the mouse.")
 

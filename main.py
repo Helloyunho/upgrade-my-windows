@@ -6,12 +6,13 @@ import os
 from pathlib import Path
 from PIL import Image
 from discord.ext import commands
-from discord import app_commands
 from xml.dom import minidom
 from dotenv import load_dotenv
+import tkinter as tk
 
 from typing import Literal
 from typings.vminfo import VMInfo
+from utils.display_window import DisplayWindow, tkinter_event_loop
 
 COMMANDS = [
     "admin",
@@ -24,6 +25,8 @@ COMMANDS = [
     "screenshot",
 ]
 
+FPS = 15
+
 load_dotenv()
 
 
@@ -33,12 +36,14 @@ class UpgradeMyWindowsBot(commands.Bot):
     vnc: VNCDoToolClient | None
     vnc_loop_task: asyncio.Task | None
     image_path: Path
+    display_window: DisplayWindow
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.virt = None
         self.dom = None
         self.vnc = None
+        self.vnc_loop_task = None
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
 
     async def connect_qemu(self, reconnect=False):
@@ -64,11 +69,21 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def vnc_refresh_loop(self):
         while self.vnc:
-            await asyncio.sleep(1 / 60)
+            await asyncio.sleep(1 / FPS)
             if self.vnc.writer.is_closing():
                 self.vnc = None
                 break
             await self.vnc.refreshScreen()
+            asyncio.create_task(self.show_screen())
+
+    async def show_screen(self):
+        if self.vnc and self.vnc.screen:
+            if not self.display_window.photo or (
+                self.vnc.screen.size[0] != self.display_window.photo.width()
+                or self.vnc.screen.size[1] != self.display_window.photo.height()
+            ):
+                self.display_window.set_canvas_size(self.vnc.screen)
+            self.display_window.update_frame(self.vnc.screen)
 
     async def disconnect_vnc(self):
         if self.vnc_loop_task:
@@ -79,17 +94,17 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.vnc = None
 
     async def shutdown_domain(self):
-        if self.dom and self.dom.isActive():
+        if self.dom and self.dom.isActive() == 1:
             await self.disconnect_vnc()
             self.dom.shutdown()
 
     async def start_domain(self):
-        if self.dom and not self.dom.isActive():
+        if self.dom and not self.dom.isActive() == 1:
             self.dom.create()
             await self.connect_vnc()
 
     async def force_shutdown_domain(self):
-        if self.dom and self.dom.isActive():
+        if self.dom and self.dom.isActive() == 1:
             await self.disconnect_vnc()
             self.dom.destroy()
 
@@ -104,6 +119,9 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
+        root = tk.Tk()
+        self.display_window = DisplayWindow(root)
+        asyncio.create_task(tkinter_event_loop(root))
         await self.connect_qemu()
         await self.start_domain()
         await self.connect_vnc()
@@ -168,6 +186,9 @@ class UpgradeMyWindowsBot(commands.Bot):
                 xml.toxml("utf8").decode(),
                 "libosinfo",
                 "http://libosinfo.org/xmlns/libvirt/domain/1.0",
+                libvirt.VIR_DOMAIN_AFFECT_CURRENT
+                | libvirt.VIR_DOMAIN_AFFECT_LIVE
+                | libvirt.VIR_DOMAIN_AFFECT_CONFIG,
             )
 
     def get_current_info(self) -> VMInfo | None:

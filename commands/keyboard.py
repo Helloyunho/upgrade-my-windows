@@ -36,10 +36,10 @@ class Keyboard(commands.Cog):
             char = chr(BACKSLASH_KEYMAP[char]) if char in BACKSLASH_KEYMAP else char
             if key_down:
                 await self.bot.vnc.keyDown(char)
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(0.0001)
             if key_up:
                 await self.bot.vnc.keyUp(char)
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(0.0001)
 
     async def key_press(self, text: str, key_down: bool = True, key_up: bool = True):
         if not self.bot.vnc:
@@ -63,10 +63,10 @@ class Keyboard(commands.Cog):
                 if converted:
                     if key_down and (i - length) < 0:
                         await self.bot.vnc.keyDown(chr(converted))
-                        await asyncio.sleep(0.001)
+                        await asyncio.sleep(0.0001)
                     elif key_up and (i - length) >= 0:
                         await self.bot.vnc.keyUp(chr(converted))
-                        await asyncio.sleep(0.001)
+                        await asyncio.sleep(0.0001)
                 else:
                     if key_down and (i - length) < 0:
                         await self.char_split_press(sequence, key_down, False)
