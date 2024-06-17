@@ -58,6 +58,7 @@ class VNCClient(threading.Thread):
         loop.create_task(self.vnc.mousePress(button))
 
     async def vnc_refresh_loop(self):
+        await asyncio.sleep(1)
         while True:
             if self.vnc.writer.is_closing():
                 if self.on_close:
