@@ -1,6 +1,6 @@
 import asyncio
 import threading
-import time
+import traceback
 from typing import Callable
 from vncdotool.client import VNCDoToolClient
 from PIL.Image import Image
@@ -59,7 +59,6 @@ class VNCClient(threading.Thread):
 
     async def vnc_refresh_loop(self):
         while True:
-            await asyncio.sleep(1 / FPS)
             if self.vnc.writer.is_closing():
                 if self.on_close:
                     self.on_close()
@@ -72,4 +71,9 @@ class VNCClient(threading.Thread):
             self.on_screen_update(self.vnc.screen)
 
     def run(self) -> None:
-        asyncio.run(self.connect_vnc())
+        try:
+            asyncio.run(self.connect_vnc())
+        except Exception as e:
+            traceback.print_exc()
+            if self.on_close:
+                self.on_close()
