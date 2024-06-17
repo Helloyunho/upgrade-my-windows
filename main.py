@@ -1,6 +1,5 @@
 import asyncio
 import discord
-from vncdotool.client import VNCDoToolClient
 import libvirt
 import os
 from pathlib import Path
@@ -12,6 +11,7 @@ from dotenv import load_dotenv
 from typing import Literal
 from typings.vminfo import VMInfo
 from utils.display_window import DisplayWindow
+from utils.vnc_client import VNCClient
 import time
 
 COMMANDS = [
@@ -25,16 +25,13 @@ COMMANDS = [
     "screenshot",
 ]
 
-FPS = 60
-
 load_dotenv()
 
 
 class UpgradeMyWindowsBot(commands.Bot):
     virt: libvirt.virConnect | None
     dom: libvirt.virDomain | None
-    vnc: VNCDoToolClient | None
-    vnc_loop_task: asyncio.Task | None
+    vnc: VNCClient | None
     image_path: Path
     display_window: DisplayWindow
 
@@ -43,74 +40,59 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.virt = None
         self.dom = None
         self.vnc = None
-        self.vnc_loop_task = None
         self.is_it_working = 0
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
 
-    async def connect_qemu(self, reconnect=False):
+    def connect_qemu(self, reconnect=False):
         if self.virt or self.dom or self.vnc:
             if reconnect:
-                await self.disconnect_qemu()
+                self.disconnect_qemu()
             else:
                 return
         self.virt = libvirt.open()
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
 
-    async def connect_vnc(self, reconnect=False):
+    def connect_vnc(self, reconnect=False):
         if self.vnc:
             if reconnect:
-                await self.disconnect_vnc()
+                self.disconnect_vnc()
             else:
                 return
-        self.vnc = VNCDoToolClient()
-        reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
-        # reader, writer = await asyncio.open_connection("localhost", 5900)
-        await self.vnc.connect(reader, writer)
-        self.vnc_loop_task = asyncio.create_task(self.vnc_refresh_loop())
+        self.vnc = VNCClient(
+            on_close=self.on_vnc_disconnect, on_screen_update=self.show_screen
+        )
+        self.vnc.run()
 
-    async def vnc_refresh_loop(self):
-        while self.vnc:
-            await asyncio.sleep(1 / FPS)
-            self.is_it_working += 1
-            if self.is_it_working == 60:
-                print(time.time())
-                self.is_it_working = 0
-            if self.vnc.writer.is_closing():
-                self.vnc = None
-                break
-            await self.vnc.refreshScreen()
-            asyncio.create_task(self.show_screen())
+    def show_screen(self, image: Image.Image | None):
+        if image:
+            self.display_window.update_frame(image)
 
-    async def show_screen(self):
-        if self.vnc and self.vnc.screen:
-            self.display_window.update_frame(self.vnc.screen)
-
-    async def disconnect_vnc(self):
-        if self.vnc_loop_task:
-            self.vnc_loop_task.cancel()
-            self.vnc_loop_task = None
+    def disconnect_vnc(self):
         if self.vnc:
-            await self.vnc.disconnect()
+            self.vnc.disconnect()
             self.vnc = None
 
-    async def shutdown_domain(self):
+    def on_vnc_disconnect(self):
+        self.vnc = None
+
+    def shutdown_domain(self):
         if self.dom and self.dom.isActive() == 1:
-            await self.disconnect_vnc()
+            self.disconnect_vnc()
             self.dom.shutdown()
 
-    async def start_domain(self):
+    def start_domain(self):
         if self.dom and not self.dom.isActive() == 1:
             self.dom.create()
-            await self.connect_vnc()
+            self.connect_vnc()
 
-    async def force_shutdown_domain(self):
+    def force_shutdown_domain(self):
         if self.dom and self.dom.isActive() == 1:
-            await self.disconnect_vnc()
+            self.disconnect_vnc()
             self.dom.destroy()
 
-    async def disconnect_qemu(self):
+    def disconnect_qemu(self):
         if self.vnc:
-            await self.disconnect_vnc()
+            self.disconnect_vnc()
         if self.dom:
             self.dom = None
         if self.virt:
@@ -121,15 +103,15 @@ class UpgradeMyWindowsBot(commands.Bot):
         print(f"Logged on as {self.user}!")
         self.display_window = DisplayWindow()
         self.display_window.start()
-        await self.connect_qemu()
-        await self.start_domain()
-        await self.connect_vnc()
+        self.connect_qemu()
+        self.start_domain()
+        self.connect_vnc()
         for command in COMMANDS:
             await self.load_extension(f"commands.{command}")
 
     async def on_disconnect(self):
         self.display_window.close()
-        await self.disconnect_qemu()
+        self.disconnect_qemu()
 
     async def get_screen_img(self) -> Image.Image | None:
         if not self.vnc:
