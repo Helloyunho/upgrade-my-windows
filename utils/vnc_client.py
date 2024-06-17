@@ -10,10 +10,14 @@ FPS = 60
 
 class CustomVNCClient(VNCDoToolClient):
     on_ready: Callable[[], None] | None
+    width: int
+    height: int
 
     def __init__(self, on_ready=None):
         super().__init__()
         self.on_ready = on_ready
+        self.width = 0
+        self.height = 0
 
     async def vncConnectionMade(self):
         await super().vncConnectionMade()
