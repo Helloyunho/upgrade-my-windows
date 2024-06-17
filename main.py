@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from typing import Literal
 from typings.vminfo import VMInfo
 from utils.display_window import DisplayWindow
+import time
 
 COMMANDS = [
     "admin",
@@ -43,6 +44,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.dom = None
         self.vnc = None
         self.vnc_loop_task = None
+        self.is_it_working = 0
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
 
     async def connect_qemu(self, reconnect=False):
@@ -69,6 +71,10 @@ class UpgradeMyWindowsBot(commands.Bot):
     async def vnc_refresh_loop(self):
         while self.vnc:
             await asyncio.sleep(1 / FPS)
+            self.is_it_working += 1
+            if self.is_it_working == 60:
+                print(time.time())
+                self.is_it_working = 0
             if self.vnc.writer.is_closing():
                 self.vnc = None
                 break
