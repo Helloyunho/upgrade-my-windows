@@ -114,7 +114,6 @@ class UpgradeMyWindowsBot(commands.Bot):
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
         self.display_window = DisplayWindow()
-        asyncio.create_task(self.display_window.pygame_loop())
         await self.connect_qemu()
         await self.start_domain()
         await self.connect_vnc()

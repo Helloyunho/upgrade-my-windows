@@ -28,7 +28,3 @@ class DisplayWindow:
 
         self.screen.blit(pygame_image, (0, 0))
         pygame.display.flip()
-
-    async def pygame_loop(self):
-        while self.running:
-            pygame.display.flip()
