@@ -1,9 +1,10 @@
 import pygame
-from io import BytesIO
+import threading
 
 
-class DisplayWindow:
+class DisplayWindow(threading.Thread):
     def __init__(self):
+        super().__init__()
         pygame.init()
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Upgrade My Windows")
@@ -28,3 +29,9 @@ class DisplayWindow:
 
         self.screen.blit(pygame_image, (0, 0))
         pygame.display.flip()
+
+    def run(self):
+        while self.running:
+            pygame.display.flip()
+
+        pygame.quit()

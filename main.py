@@ -114,6 +114,7 @@ class UpgradeMyWindowsBot(commands.Bot):
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
         self.display_window = DisplayWindow()
+        self.display_window.start()
         await self.connect_qemu()
         await self.start_domain()
         await self.connect_vnc()
@@ -121,6 +122,7 @@ class UpgradeMyWindowsBot(commands.Bot):
             await self.load_extension(f"commands.{command}")
 
     async def on_disconnect(self):
+        self.display_window.close()
         await self.disconnect_qemu()
 
     async def get_screen_img(self) -> Image.Image | None:
