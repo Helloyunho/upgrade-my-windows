@@ -18,7 +18,6 @@ class VNCClient(threading.Thread):
         self.vnc = VNCDoToolClient()
         self.on_close = on_close
         self.on_screen_update = on_screen_update
-        self.is_it_working = 0
 
     @property
     def screen(self) -> Image | None:
@@ -34,13 +33,33 @@ class VNCClient(threading.Thread):
         loop = asyncio.get_running_loop()
         loop.create_task(self.vnc.disconnect())
 
+    def keyDown(self, key: str):
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.vnc.keyDown(key))
+
+    def keyUp(self, key: str):
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.vnc.keyUp(key))
+
+    def mouseMove(self, x: int, y: int):
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.vnc.mouseMove(x, y))
+
+    def mouseDown(self, button: int):
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.vnc.mouseDown(button))
+
+    def mouseUp(self, button: int):
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.vnc.mouseUp(button))
+
+    def mousePress(self, button: int):
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.vnc.mousePress(button))
+
     async def vnc_refresh_loop(self):
         while True:
             await asyncio.sleep(1 / FPS)
-            self.is_it_working += 1
-            if self.is_it_working == 60:
-                print(time.time())
-                self.is_it_working = 0
             if self.vnc.writer.is_closing():
                 if self.on_close:
                     self.on_close()

@@ -39,7 +39,7 @@ class Mouse(commands.Cog):
             return
 
         await interaction.response.defer()
-        await self.bot.vnc.mouseMove(x, y)
+        self.bot.vnc.mouseMove(x, y)
 
         await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
 
@@ -65,9 +65,9 @@ class Mouse(commands.Cog):
             return
 
         await interaction.response.defer()
-        await self.bot.vnc.mouseDown(button_code)
+        self.bot.vnc.mouseDown(button_code)
         await asyncio.sleep(0.001)
-        await self.bot.vnc.mouseUp(button_code)
+        self.bot.vnc.mouseUp(button_code)
 
         await interaction.followup.send("Clicked the mouse.")
 
@@ -99,7 +99,7 @@ class Mouse(commands.Cog):
 
         await interaction.response.defer()
         for _ in range(amount):
-            await self.bot.vnc.mouseClick(direction_code)
+            self.bot.vnc.mousePress(direction_code)
 
         await interaction.followup.send("Scrolled the mouse.")
 
@@ -127,7 +127,7 @@ class Mouse(commands.Cog):
             return
 
         await interaction.response.defer()
-        await self.bot.vnc.mouseDown(button_code)
+        self.bot.vnc.mouseDown(button_code)
 
         await interaction.followup.send("Pressed the mouse button.")
 
@@ -153,7 +153,7 @@ class Mouse(commands.Cog):
             return
 
         await interaction.response.defer()
-        await self.bot.vnc.mouseUp(button_code)
+        self.bot.vnc.mouseUp(button_code)
 
         await interaction.followup.send("Depressed the mouse button.")
 
