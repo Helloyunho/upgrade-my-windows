@@ -61,7 +61,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.vnc = VNCClient(
             on_close=self.on_vnc_disconnect, on_screen_update=self.show_screen
         )
-        self.vnc.run()
+        self.vnc.start()
 
     def show_screen(self, image: Image.Image | None):
         if image:
