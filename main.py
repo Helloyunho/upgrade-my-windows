@@ -24,7 +24,7 @@ COMMANDS = [
     "screenshot",
 ]
 
-FPS = 15
+FPS = 60
 
 load_dotenv()
 
