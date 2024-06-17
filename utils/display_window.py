@@ -1,40 +1,34 @@
-import tkinter as tk
-from PIL import ImageTk
-import asyncio
+import pygame
+from io import BytesIO
 
 
 class DisplayWindow:
-    def __init__(self, window, fps=60):
-        self.window = window
-        self.window.title("Upgrade My Windows")
-
-        self.fps = fps
-        self.delay = int(1000 / fps)  # Calculate delay in milliseconds
-
-        # Placeholder for the initial image dimensions
-        self.photo = None
-
-        # Create the canvas without setting dimensions
-        self.canvas = tk.Canvas(window)
-        self.canvas.pack()
-
-        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption("Upgrade My Windows")
         self.running = True
 
-    def on_closing(self):
+    def close(self):
         self.running = False
-        self.window.destroy()
 
     def update_frame(self, image):
-        img = ImageTk.PhotoImage(image)
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=img)
-        self.photo = img  # Keep a reference to avoid garbage collection
+        mode = image.mode
+        size = image.size
+        data = image.tobytes()
 
-    def set_canvas_size(self, image):
-        self.canvas.config(width=image.width, height=image.height)
+        pygame_image = pygame.image.fromstring(data, size, mode)
+        image_width, image_height = image.size
+        if (
+            image_width != self.screen.get_width()
+            or image_height != self.screen.get_height()
+        ):
+            self.screen = pygame.display.set_mode((image_width, image_height))
+            self.screen.fill((0, 0, 0))
 
+        self.screen.blit(pygame_image, (0, 0))
+        pygame.display.flip()
 
-async def tkinter_event_loop(root):
-    while True:
-        root.update()
-        await asyncio.sleep(1 / 1000)
+    async def pygame_loop(self):
+        while self.running:
+            pygame.display.flip()

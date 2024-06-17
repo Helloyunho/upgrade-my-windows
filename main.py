@@ -8,11 +8,10 @@ from PIL import Image
 from discord.ext import commands
 from xml.dom import minidom
 from dotenv import load_dotenv
-import tkinter as tk
 
 from typing import Literal
 from typings.vminfo import VMInfo
-from utils.display_window import DisplayWindow, tkinter_event_loop
+from utils.display_window import DisplayWindow
 
 COMMANDS = [
     "admin",
@@ -78,11 +77,6 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def show_screen(self):
         if self.vnc and self.vnc.screen:
-            if not self.display_window.photo or (
-                self.vnc.screen.size[0] != self.display_window.photo.width()
-                or self.vnc.screen.size[1] != self.display_window.photo.height()
-            ):
-                self.display_window.set_canvas_size(self.vnc.screen)
             self.display_window.update_frame(self.vnc.screen)
 
     async def disconnect_vnc(self):
@@ -119,9 +113,8 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
-        root = tk.Tk()
-        self.display_window = DisplayWindow(root)
-        asyncio.create_task(tkinter_event_loop(root))
+        self.display_window = DisplayWindow()
+        asyncio.create_task(self.display_window.pygame_loop())
         await self.connect_qemu()
         await self.start_domain()
         await self.connect_vnc()
