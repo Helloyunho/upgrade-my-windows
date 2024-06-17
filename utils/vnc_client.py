@@ -10,14 +10,10 @@ FPS = 60
 
 class CustomVNCClient(VNCDoToolClient):
     on_ready: Callable[[], None] | None
-    width: int
-    height: int
 
     def __init__(self, on_ready=None):
         super().__init__()
         self.on_ready = on_ready
-        self.width = 0
-        self.height = 0
 
     async def vncConnectionMade(self):
         await super().vncConnectionMade()
@@ -29,12 +25,14 @@ class VNCClient(threading.Thread):
     vnc: VNCDoToolClient
     on_close: Callable[[], None] | None
     on_screen_update: Callable[[Image | None], None] | None
+    is_ready: asyncio.Event
 
     def __init__(self, on_close=None, on_screen_update=None):
         super().__init__()
-        self.vnc = CustomVNCClient()
+        self.vnc = CustomVNCClient(on_ready=self.on_ready)
         self.on_close = on_close
         self.on_screen_update = on_screen_update
+        self.is_ready = asyncio.Event()
 
     @property
     def screen(self) -> Image | None:
@@ -47,45 +45,37 @@ class VNCClient(threading.Thread):
         await self.vnc_refresh_loop()
 
     def disconnect(self):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc.disconnect())
+        asyncio.create_task(self.vnc.disconnect())
 
     def keyDown(self, key: str):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc.keyDown(key))
+        asyncio.create_task(self.vnc.keyDown(key))
 
     def keyUp(self, key: str):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc.keyUp(key))
+        asyncio.create_task(self.vnc.keyUp(key))
 
     def mouseMove(self, x: int, y: int):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc.mouseMove(x, y))
+        asyncio.create_task(self.vnc.mouseMove(x, y))
 
     def mouseDown(self, button: int):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc.mouseDown(button))
+        asyncio.create_task(self.vnc.mouseDown(button))
 
     def mouseUp(self, button: int):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc.mouseUp(button))
+        asyncio.create_task(self.vnc.mouseUp(button))
 
     def mousePress(self, button: int):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc.mousePress(button))
+        asyncio.create_task(self.vnc.mousePress(button))
 
     def on_ready(self):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.vnc_refresh_loop())
+        self.is_ready.set()
 
     async def vnc_refresh_loop(self):
+        await self.is_ready.wait()
         while True:
             if self.vnc.writer.is_closing():
                 if self.on_close:
                     self.on_close()
                 break
-            print(self.vnc.width, self.vnc.height)
-            await self.vnc.refreshScreen()
+            await self.vnc.refreshScreen(incremental=True)
             asyncio.create_task(self._on_screen_update())
 
     async def _on_screen_update(self) -> None:
@@ -94,7 +84,9 @@ class VNCClient(threading.Thread):
 
     def run(self) -> None:
         try:
-            asyncio.run(self.connect_vnc())
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(self.connect_vnc())
         except Exception as e:
             traceback.print_exc()
             if self.on_close:
