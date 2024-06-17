@@ -80,8 +80,8 @@ class VNCClient(threading.Thread):
                 if self.on_close:
                     self.on_close()
                 break
-            await self.vnc.refreshScreen()
-            asyncio.create_task(self._on_screen_update())
+            # await self.vnc.refreshScreen()
+            # asyncio.create_task(self._on_screen_update())
 
     async def _on_screen_update(self) -> None:
         if self.on_screen_update:
