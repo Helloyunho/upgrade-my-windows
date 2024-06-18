@@ -48,6 +48,16 @@ class Mouse(commands.Cog):
         if relative:
             x += self.bot.vnc.x
             y += self.bot.vnc.y
+
+        if (
+            x < 0
+            or y < 0
+            or x > self.bot.vnc.screen.size[0]
+            or y > self.bot.vnc.screen.size[1]
+        ):
+            await interaction.followup.send("Coordinates are out of bounds.")
+            return
+
         self.bot.vnc.mouseMove(x, y)
 
         await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
@@ -62,9 +72,8 @@ class Mouse(commands.Cog):
             return
 
         await interaction.response.defer()
-        self.bot.vnc.mouseMove(
-            self.bot.vnc.screen.size[0] * 2, self.bot.vnc.screen.size[1] * 2
-        )
+        self.bot.vnc.mouseMove(self.bot.vnc.screen.size[0], self.bot.vnc.screen.size[1])
+        await asyncio.sleep(0.01)
         self.bot.vnc.mouseMove(0, 0)
 
         await interaction.followup.send("Reset the mouse cursor.")
