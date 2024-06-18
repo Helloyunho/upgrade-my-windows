@@ -24,7 +24,6 @@ class Admin(commands.Cog):
         name="reboot",
         description="Reboots the VM.",
     )
-    @is_me()
     async def reboot_command(self, interaction: discord.Interaction):
         await interaction.response.defer()
         self.bot.force_shutdown_domain()
