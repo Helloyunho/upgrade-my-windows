@@ -38,6 +38,14 @@ class VNCClient(threading.Thread):
     def screen(self) -> Image | None:
         return self.vnc.screen
 
+    @property
+    def x(self) -> int:
+        return self.vnc.x
+
+    @property
+    def y(self) -> int:
+        return self.vnc.y
+
     async def connect_vnc(self):
         reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
         # reader, writer = await asyncio.open_connection("localhost", 5900)

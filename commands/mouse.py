@@ -32,37 +32,42 @@ class Mouse(commands.Cog):
         name="xy",
         description="Moves the mouse using XY coordinates. (0, 0) is the top-left corner.",
     )
-    @app_commands.describe(x="The X coordinate.", y="The Y coordinate.")
-    async def move_xy_command(self, interaction: discord.Interaction, x: int, y: int):
-        if not self.bot.vnc:
-            await interaction.response.send_message("VM is not running.")
-            return
-
-        await interaction.response.defer()
-        self.bot.vnc.mouseMove(x, y)
-
-        await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
-
-    @app_commands.command(
-        name="drag",
-        description="Moves the mouse relatively using XY coordinates.",
-    )
     @app_commands.describe(
         x="The X coordinate.",
         y="The Y coordinate.",
-        step="How many coordinates to move per 200ms. Default is 10.",
+        relative="Whether the coordinates are relative to the current position.",
     )
-    async def drag_command(
-        self, interaction: discord.Interaction, x: int, y: int, step: int = 10
+    async def move_xy_command(
+        self, interaction: discord.Interaction, x: int, y: int, relative: bool = False
     ):
         if not self.bot.vnc:
             await interaction.response.send_message("VM is not running.")
             return
 
         await interaction.response.defer()
-        self.bot.vnc.mouseDrag(x, y, step)
+        if relative:
+            x += self.bot.vnc.x
+            y += self.bot.vnc.y
+        self.bot.vnc.mouseMove(x, y)
 
         await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
+
+    @app_commands.command(
+        name="reset_cursor",
+        description="Resets the mouse cursor to the top-left of the screen.",
+    )
+    async def reset_cursor_command(self, interaction: discord.Interaction):
+        if not self.bot.vnc:
+            await interaction.response.send_message("VM is not running.")
+            return
+
+        await interaction.response.defer()
+        self.bot.vnc.mouseMove(
+            self.bot.vnc.screen.size[0] * 2, self.bot.vnc.screen.size[1] * 2
+        )
+        self.bot.vnc.mouseMove(0, 0)
+
+        await interaction.followup.send("Reset the mouse cursor.")
 
     @app_commands.command(name="click", description="Clicks the mouse.")
     @app_commands.describe(button="The button to click.")
