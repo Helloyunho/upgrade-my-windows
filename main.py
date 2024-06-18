@@ -12,7 +12,6 @@ from typing import Literal
 from typings.vminfo import VMInfo
 from utils.display_window import DisplayWindow
 from utils.vnc_client import VNCClient
-import time
 
 COMMANDS = [
     "admin",

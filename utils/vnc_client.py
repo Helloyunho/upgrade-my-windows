@@ -56,6 +56,9 @@ class VNCClient(threading.Thread):
     def mouseMove(self, x: int, y: int):
         asyncio.create_task(self.vnc.mouseMove(x, y))
 
+    def mouseDrag(self, x: int, y: int, step: int):
+        asyncio.create_task(self.vnc.mouseDrag(x, y, step))
+
     def mouseDown(self, button: int):
         asyncio.create_task(self.vnc.mouseDown(button))
 

@@ -43,6 +43,27 @@ class Mouse(commands.Cog):
 
         await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
 
+    @app_commands.command(
+        name="drag",
+        description="Moves the mouse relatively using XY coordinates.",
+    )
+    @app_commands.describe(
+        x="The X coordinate.",
+        y="The Y coordinate.",
+        step="How many coordinates to move per 200ms. Default is 10.",
+    )
+    async def move_xy_command(
+        self, interaction: discord.Interaction, x: int, y: int, step: int = 10
+    ):
+        if not self.bot.vnc:
+            await interaction.response.send_message("VM is not running.")
+            return
+
+        await interaction.response.defer()
+        self.bot.vnc.mouseDrag(x, y, step)
+
+        await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
+
     @app_commands.command(name="click", description="Clicks the mouse.")
     @app_commands.describe(button="The button to click.")
     @app_commands.choices(
