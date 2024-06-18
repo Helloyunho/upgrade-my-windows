@@ -56,7 +56,7 @@ class Change(commands.Cog):
             self.bot.set_device(type="floppy")
 
         await interaction.response.send_message(
-            "VM has been updated. Restart the VM to apply the cpu and memory changes."
+            "VM has been updated. Restart(or shut down) the VM to apply the cpu and memory changes."
         )
 
     @change_group.command(
