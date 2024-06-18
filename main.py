@@ -34,13 +34,16 @@ class UpgradeMyWindowsBot(commands.Bot):
     vnc: VNCClient | None
     image_path: Path
     display_window: DisplayWindow
+    vm_loop: asyncio.Task | None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.display_window = DisplayWindow()
+        self.display_window.start()
         self.virt = None
         self.dom = None
         self.vnc = None
-        self.is_it_working = 0
+        self.vm_loop = None
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
 
     def connect_qemu(self, reconnect=False):
@@ -51,6 +54,14 @@ class UpgradeMyWindowsBot(commands.Bot):
                 return
         self.virt = libvirt.open()
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
+        self.vm_loop = asyncio.create_task(self.vm_start_loop())
+
+    async def vm_start_loop(self):
+        while self.dom:
+            await asyncio.sleep(1)
+            if not self.dom.isActive() == 1:
+                self.start_domain()
+                self.connect_vnc(reconnect=True)
 
     def connect_vnc(self, reconnect=False):
         if self.vnc:
@@ -93,6 +104,9 @@ class UpgradeMyWindowsBot(commands.Bot):
     def disconnect_qemu(self):
         if self.vnc:
             self.disconnect_vnc()
+        if self.vm_loop:
+            self.vm_loop.cancel()
+            self.vm_loop = None
         if self.dom:
             self.dom = None
         if self.virt:
@@ -101,8 +115,6 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
-        self.display_window = DisplayWindow()
-        self.display_window.start()
         self.connect_qemu()
         self.start_domain()
         self.connect_vnc()
