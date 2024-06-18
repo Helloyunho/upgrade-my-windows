@@ -52,7 +52,7 @@ class Mouse(commands.Cog):
         y="The Y coordinate.",
         step="How many coordinates to move per 200ms. Default is 10.",
     )
-    async def move_xy_command(
+    async def drag_command(
         self, interaction: discord.Interaction, x: int, y: int, step: int = 10
     ):
         if not self.bot.vnc:
