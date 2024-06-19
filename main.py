@@ -83,7 +83,8 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.vnc = None
 
     def on_vnc_disconnect(self):
-        self.vnc = None
+        if self.vnc and self.vnc.vnc.writer.is_closing():
+            self.vnc = None
 
     def shutdown_domain(self):
         if self.dom and self.dom.isActive() == 1:
@@ -114,15 +115,16 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
-        self.connect_qemu()
-        self.start_domain()
-        self.connect_vnc()
         for command in COMMANDS:
             await self.load_extension(f"commands.{command}")
 
-    async def on_disconnect(self):
+    async def close(self):
+        if self._closed:
+            return
         self.display_window.close()
+        self.display_window.join()
         self.disconnect_qemu()
+        await super().close()
 
     async def get_screen_img(self) -> Image.Image | None:
         if not self.vnc:
