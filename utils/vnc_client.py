@@ -1,7 +1,8 @@
 import asyncio
 import threading
 import traceback
-from typing import Callable, Generic, Literal, TypeVar, Awaitable
+from typing import Any, Callable, Generic, Literal, TypeVar
+from collections.abc import Coroutine
 from vncdotool.client import VNCDoToolClient
 from PIL.Image import Image
 
@@ -11,13 +12,13 @@ Events = TypeVar("Events", bound=str)
 
 
 class EventListener(Generic[Events]):
-    event_listeners: dict[Events, Callable[..., Awaitable[None]]]
+    event_listeners: dict[Events, Callable[..., Coroutine[Any, Any, Any]]]
 
     def __init__(self):
         self.event_listeners = {}
 
     def add_event_listener(
-        self, event: Events, callback: Callable[..., Awaitable[None]]
+        self, event: Events, callback: Callable[..., Coroutine[Any, Any, Any]]
     ):
         self.event_listeners[event] = callback
 
@@ -26,7 +27,7 @@ class EventListener(Generic[Events]):
 
     async def dispatch_event(self, event: Events, *args):
         if event in self.event_listeners:
-            await self.event_listeners[event](*args)
+            asyncio.create_task(self.event_listeners[event](*args))
 
 
 vnc_events = Literal["ready", "audio_start", "audio_stop", "audio_data"]
