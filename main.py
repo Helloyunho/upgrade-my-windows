@@ -80,10 +80,11 @@ class UpgradeMyWindowsBot(commands.Bot):
     def disconnect_vnc(self):
         if self.vnc:
             self.vnc.disconnect()
+            self.vnc.join()
             self.vnc = None
 
     def on_vnc_disconnect(self):
-        if self.vnc and self.vnc.vnc.writer.is_closing():
+        if self.vnc and (not self.vnc.vnc.writer or self.vnc.vnc.writer.is_closing()):
             self.vnc = None
 
     def shutdown_domain(self):

@@ -82,7 +82,7 @@ class VNCClient(threading.Thread):
     async def vnc_refresh_loop(self):
         await self.is_ready.wait()
         while True:
-            if self.vnc.writer.is_closing():
+            if not self.vnc.writer or self.vnc.writer.is_closing():
                 if self.on_close:
                     self.on_close()
                 break
