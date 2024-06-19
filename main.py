@@ -80,7 +80,6 @@ class UpgradeMyWindowsBot(commands.Bot):
     def disconnect_vnc(self):
         if self.vnc:
             self.vnc.disconnect()
-            self.vnc.join()
             self.vnc = None
 
     def on_vnc_disconnect(self):
