@@ -26,7 +26,7 @@ class EventListener(Generic[Events]):
 
     async def dispatch_event(self, event: Events, *args):
         if event in self.event_listeners:
-            self.event_listeners[event](*args)
+            await self.event_listeners[event](*args)
 
 
 vnc_events = Literal["ready", "audio_start", "audio_stop", "audio_data"]
