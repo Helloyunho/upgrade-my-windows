@@ -34,6 +34,7 @@ class UpgradeMyWindowsBot(commands.Bot):
     image_path: Path
     display_window: DisplayWindow
     vm_loop: asyncio.Task | None
+    audio_buffer: bytes
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,6 +45,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.vnc = None
         self.vm_loop = None
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
+        self.audio_buffer = b""
 
     def connect_qemu(self, reconnect=False):
         if self.virt or self.dom or self.vnc:
@@ -88,8 +90,12 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.vnc.audioStreamBeginRequest()
 
     async def _on_audio_data(self, size: int, data: bytes):
-        if self.vnc and self.display_window:
-            self.display_window.update_audio(data)
+        if len(self.audio_buffer) < 1024:
+            self.audio_buffer += data
+        else:
+            if self.vnc and self.display_window:
+                self.display_window.update_audio(data)
+            self.audio_buffer = b""
 
     def disconnect_vnc(self):
         if self.vnc:
