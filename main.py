@@ -68,22 +68,32 @@ class UpgradeMyWindowsBot(commands.Bot):
                 self.disconnect_vnc()
             else:
                 return
-        self.vnc = VNCClient(
-            on_close=self.on_vnc_disconnect, on_screen_update=self.show_screen
-        )
+        self.vnc = VNCClient()
+        self.vnc.add_event_listener("disconnect", self._on_vnc_disconnect)
+        self.vnc.add_event_listener("screen_update", self._on_screen_update)
+        self.vnc.add_event_listener("ready", self._on_vnc_ready)
+        self.vnc.add_event_listener("audio_data", self._on_audio_data)
         self.vnc.start()
 
-    def show_screen(self, image: Image.Image | None):
+    async def _on_screen_update(self, image: Image.Image | None):
         if image:
             self.display_window.update_frame(image)
+
+    async def _on_vnc_disconnect(self):
+        if self.vnc and (not self.vnc.vnc.writer or self.vnc.vnc.writer.is_closing()):
+            self.vnc = None
+
+    async def _on_vnc_ready(self):
+        if self.vnc:
+            self.vnc.audioStreamBeginRequest()
+
+    async def _on_audio_data(self, size: int, data: bytes):
+        if self.vnc and self.display_window:
+            self.display_window.update_audio(data)
 
     def disconnect_vnc(self):
         if self.vnc:
             self.vnc.disconnect()
-            self.vnc = None
-
-    def on_vnc_disconnect(self):
-        if self.vnc and (not self.vnc.vnc.writer or self.vnc.vnc.writer.is_closing()):
             self.vnc = None
 
     def shutdown_domain(self):

@@ -1,38 +1,72 @@
 import asyncio
 import threading
 import traceback
-from typing import Callable
+from typing import Callable, Generic, Literal, TypeVar, Awaitable
 from vncdotool.client import VNCDoToolClient
 from PIL.Image import Image
 
 FPS = 60
 
+Events = TypeVar("Events", bound=str)
 
-class CustomVNCClient(VNCDoToolClient):
-    on_ready: Callable[[], None] | None
 
-    def __init__(self, on_ready=None):
+class EventListener(Generic[Events]):
+    event_listeners: dict[Events, Callable[..., Awaitable[None]]]
+
+    def __init__(self):
+        self.event_listeners = {}
+
+    def add_event_listener(
+        self, event: Events, callback: Callable[..., Awaitable[None]]
+    ):
+        self.event_listeners[event] = callback
+
+    def remove_event_listener(self, event: Events):
+        self.event_listeners.pop(event, None)
+
+    async def dispatch_event(self, event: Events, *args):
+        if event in self.event_listeners:
+            self.event_listeners[event](*args)
+
+
+vnc_events = Literal["ready", "audio_start", "audio_stop", "audio_data"]
+
+
+class CustomVNCClient(VNCDoToolClient, EventListener[vnc_events]):
+    event_listeners: dict[str, Callable]
+
+    def __init__(self):
         super().__init__()
-        self.on_ready = on_ready
+        self.event_listeners = {}
 
     async def vncConnectionMade(self):
         await super().vncConnectionMade()
-        if self.on_ready:
-            self.on_ready()
+        await self.dispatch_event("ready")
+
+    async def audio_stream_begin(self) -> None:
+        await self.dispatch_event("audio_start")
+
+    async def audio_stream_end(self) -> None:
+        await self.dispatch_event("audio_stop")
+
+    async def audio_stream_data(self, size: int, data: bytes) -> None:
+        await self.dispatch_event("audio_data", size, data)
 
 
-class VNCClient(threading.Thread):
+class VNCClient(
+    threading.Thread, EventListener[Literal[vnc_events, "disconnect", "screen_update"]]
+):
     vnc: VNCDoToolClient
-    on_close: Callable[[], None] | None
-    on_screen_update: Callable[[Image | None], None] | None
     is_ready: asyncio.Event
 
-    def __init__(self, on_close=None, on_screen_update=None):
+    def __init__(self):
         super().__init__()
-        self.vnc = CustomVNCClient(on_ready=self.on_ready)
-        self.on_close = on_close
-        self.on_screen_update = on_screen_update
+        self.vnc = CustomVNCClient()
         self.is_ready = asyncio.Event()
+        self.vnc.add_event_listener("ready", self.on_ready)
+        self.vnc.add_event_listener("audio_start", self._on_audio_start)
+        self.vnc.add_event_listener("audio_stop", self._on_audio_stop)
+        self.vnc.add_event_listener("audio_data", self._on_audio_data)
 
     @property
     def screen(self) -> Image | None:
@@ -77,29 +111,42 @@ class VNCClient(threading.Thread):
     def mousePress(self, button: int):
         asyncio.create_task(self.vnc.mousePress(button))
 
-    def on_ready(self):
+    def audioStreamBeginRequest(self):
+        asyncio.create_task(self.vnc.audioStreamBeginRequest())
+
+    def audioStreamStopRequest(self):
+        asyncio.create_task(self.vnc.audioStreamStopRequest())
+
+    async def on_ready(self):
+        await self.dispatch_event("ready")
         self.is_ready.set()
 
     async def vnc_refresh_loop(self):
         await self.is_ready.wait()
         while True:
             if not self.vnc.writer or self.vnc.writer.is_closing():
-                if self.on_close:
-                    self.on_close()
+                await self.dispatch_event("disconnect")
                 break
             await self.vnc.refreshScreen(incremental=True)
             asyncio.create_task(self._on_screen_update())
 
     async def _on_screen_update(self) -> None:
-        if self.on_screen_update:
-            self.on_screen_update(self.vnc.screen)
+        await self.dispatch_event("screen_update", self.vnc.screen)
+
+    async def _on_audio_start(self):
+        await self.dispatch_event("audio_start")
+
+    async def _on_audio_stop(self):
+        await self.dispatch_event("audio_stop")
+
+    async def _on_audio_data(self, size: int, data: bytes):
+        await self.dispatch_event("audio_data", size, data)
 
     def run(self) -> None:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             loop.run_until_complete(self.connect_vnc())
         except Exception as e:
             traceback.print_exc()
-            if self.on_close:
-                self.on_close()
+            loop.run_until_complete(self.dispatch_event("disconnect"))

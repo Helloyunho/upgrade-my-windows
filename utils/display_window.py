@@ -5,6 +5,7 @@ import threading
 class DisplayWindow(threading.Thread):
     def __init__(self):
         super().__init__()
+        pygame.mixer.pre_init(44100, -16, 2)
         pygame.init()
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Upgrade My Windows")
@@ -29,6 +30,10 @@ class DisplayWindow(threading.Thread):
 
         self.screen.blit(pygame_image, (0, 0))
         pygame.display.flip()
+
+    def update_audio(self, data: bytes):
+        pygame.mixer.music.load(data)
+        pygame.mixer.music.play()
 
     def run(self):
         while self.running:
