@@ -50,8 +50,8 @@ class Mouse(commands.Cog):
             y += self.bot.vnc.y
 
         if (
-            x < 0
-            or y < 0
+            x < -1
+            or y < -1
             or x > self.bot.vnc.screen.size[0]
             or y > self.bot.vnc.screen.size[1]
         ):
