@@ -114,6 +114,11 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.virt.close()
             self.virt = None
 
+    async def setup_hook(self):
+        self.connect_qemu()
+        self.start_domain()
+        self.connect_vnc()
+
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
         for command in COMMANDS:
