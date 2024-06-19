@@ -54,7 +54,7 @@ class VNCClient(threading.Thread):
 
     def disconnect(self):
         asyncio.create_task(self.vnc.disconnect())
-        asyncio.get_running_loop().close()
+        self.vnc.updateCommited.set()
 
     def keyDown(self, key: str):
         asyncio.create_task(self.vnc.keyDown(key))
