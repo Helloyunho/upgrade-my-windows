@@ -34,7 +34,7 @@ vnc_events = Literal["ready", "audio_start", "audio_stop", "audio_data"]
 
 class CustomVNCClient(EventListener[vnc_events], VNCDoToolClient):
     def __init__(self):
-        EventListener[vnc_events].__init__(self)
+        super().__init__()
         VNCDoToolClient.__init__(self)
 
     async def vncConnectionMade(self):
@@ -58,7 +58,7 @@ class VNCClient(
     is_ready: asyncio.Event
 
     def __init__(self):
-        EventListener[Literal[vnc_events, "disconnect", "screen_update"]].__init__(self)
+        super().__init__()
         threading.Thread.__init__(self)
         self.vnc = CustomVNCClient()
         self.is_ready = asyncio.Event()
