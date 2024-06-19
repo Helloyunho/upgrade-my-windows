@@ -62,6 +62,23 @@ class Mouse(commands.Cog):
 
         await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
 
+    @move_group.command(
+        name="center",
+        description="Moves the mouse to the center of the screen.",
+    )
+    async def move_center_command(self, interaction: discord.Interaction):
+        if not self.bot.vnc:
+            await interaction.response.send_message("VM is not running.")
+            return
+
+        await interaction.response.defer()
+        x = self.bot.vnc.screen.size[0] // 2
+        y = self.bot.vnc.screen.size[1] // 2
+
+        self.bot.vnc.mouseMove(x, y)
+
+        await interaction.followup.send(f"Moved the mouse to the center of the screen.")
+
     @app_commands.command(
         name="reset_cursor",
         description="Resets the mouse cursor to the top-left of the screen.",
