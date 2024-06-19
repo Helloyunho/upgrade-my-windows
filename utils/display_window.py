@@ -32,8 +32,7 @@ class DisplayWindow(threading.Thread):
         pygame.display.flip()
 
     def update_audio(self, data: bytes):
-        pygame.mixer.music.load(data)
-        pygame.mixer.music.play()
+        pygame.mixer.Sound(buffer=data).play()
 
     def run(self):
         while self.running:
