@@ -137,7 +137,7 @@ class Change(commands.Cog):
             app_commands.Choice(name=image, value=image)
             for image in os_preset[type_]
             if image.lower().startswith(current.lower())
-        ]
+        ][:25]
 
 
 async def setup(bot):
