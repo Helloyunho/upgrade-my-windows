@@ -5,7 +5,7 @@ import threading
 class DisplayWindow(threading.Thread):
     def __init__(self):
         super().__init__()
-        pygame.mixer.pre_init(44100, -16, 2, buffer=128)
+        pygame.mixer.pre_init(44100, -16, 2, buffer=2048)
         pygame.init()
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Upgrade My Windows")

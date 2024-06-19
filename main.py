@@ -90,7 +90,7 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.vnc.audioStreamBeginRequest()
 
     async def _on_audio_data(self, size: int, data: bytes):
-        if len(self.audio_buffer) < 1024:
+        if len(self.audio_buffer) < 2048:
             self.audio_buffer += data
         else:
             if self.vnc and self.display_window:
