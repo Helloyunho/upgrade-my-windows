@@ -26,7 +26,7 @@ class Eject(commands.Cog):
     async def eject_command(
         self, interaction: discord.Interaction, type: Literal["cdrom", "floppy", "both"]
     ):
-        if not self.bot.vnc:
+        if not self.bot._is_vm_running:
             await interaction.response.send_message("VM is not running.")
             return
 

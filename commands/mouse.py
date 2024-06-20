@@ -44,7 +44,7 @@ class Mouse(commands.Cog):
     async def move_xy_command(
         self, interaction: discord.Interaction, x: int, y: int, relative: bool = False
     ):
-        if not self.bot.vnc or not self.bot.vnc.screen:
+        if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -71,7 +71,7 @@ class Mouse(commands.Cog):
         description="Moves the mouse to the center of the screen.",
     )
     async def move_center_command(self, interaction: discord.Interaction):
-        if not self.bot.vnc or not self.bot.vnc.screen:
+        if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -88,7 +88,7 @@ class Mouse(commands.Cog):
         description="Resets the mouse cursor to the top-left of the screen.",
     )
     async def reset_cursor_command(self, interaction: discord.Interaction):
-        if not self.bot.vnc or not self.bot.vnc.screen:
+        if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -111,7 +111,7 @@ class Mouse(commands.Cog):
     async def click_command(
         self, interaction: discord.Interaction, button: str = "left"
     ):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -142,7 +142,7 @@ class Mouse(commands.Cog):
     async def scroll_command(
         self, interaction: discord.Interaction, direction: str = "up", amount: int = 1
     ):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -173,7 +173,7 @@ class Mouse(commands.Cog):
     async def mouse_down_command(
         self, interaction: discord.Interaction, button: str = "left"
     ):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -199,7 +199,7 @@ class Mouse(commands.Cog):
     async def mouse_up_command(
         self, interaction: discord.Interaction, button: str = "left"
     ):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             await interaction.response.send_message("VM is not running.")
             return
 

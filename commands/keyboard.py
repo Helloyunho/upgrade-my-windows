@@ -35,7 +35,7 @@ class Keyboard(commands.Cog):
     async def char_split_press(
         self, text: str, key_down: bool = True, key_up: bool = True
     ):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             return
 
         for char in text:
@@ -48,7 +48,7 @@ class Keyboard(commands.Cog):
                 await asyncio.sleep(TYPE_DELAY)
 
     async def key_press(self, text: str, key_down: bool = True, key_up: bool = True):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             return
 
         # match backticks
@@ -88,7 +88,7 @@ class Keyboard(commands.Cog):
     )
     @app_commands.describe(text="The text you want to type.")
     async def type_command(self, interaction: discord.Interaction, text: str):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -104,7 +104,7 @@ class Keyboard(commands.Cog):
     @key_group.command(name="down", description="Presses a key.")
     @app_commands.describe(key="The key you want to press.")
     async def key_down_command(self, interaction: discord.Interaction, key: str):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -116,7 +116,7 @@ class Keyboard(commands.Cog):
     @key_group.command(name="up", description="Depresses a key.")
     @app_commands.describe(key="The key you want to depress.")
     async def key_up_command(self, interaction: discord.Interaction, key: str):
-        if not self.bot.vnc:
+        if not self.bot._is_vnc_connected:
             await interaction.response.send_message("VM is not running.")
             return
 

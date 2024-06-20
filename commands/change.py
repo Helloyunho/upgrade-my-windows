@@ -37,7 +37,7 @@ class Change(commands.Cog):
         interaction: discord.Interaction,
         os: str,
     ):
-        if not self.bot.vnc:
+        if not self.bot._is_vm_running:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -82,12 +82,8 @@ class Change(commands.Cog):
         type: Literal["cdrom", "floppy"],
         image: str,
     ):
-        if not self.bot.vnc:
-            await interaction.response.send_message("VM is not running.")
-            return
-
         info = await self.bot.get_current_info()
-        if not info:
+        if not self.bot._is_vm_running or not info:
             await interaction.response.send_message("VM is not running.")
             return
 

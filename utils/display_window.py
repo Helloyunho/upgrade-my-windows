@@ -4,7 +4,7 @@ import threading
 
 class DisplayWindow(threading.Thread):
     def __init__(self):
-        super().__init__()
+        super().__init__(daemon=True)
         pygame.mixer.pre_init(44100, -16, 2, buffer=512)
         pygame.init()
         self.screen = pygame.display.set_mode((800, 600))

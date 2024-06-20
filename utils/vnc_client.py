@@ -61,7 +61,7 @@ class VNCClient(
 
     def __init__(self):
         super().__init__()
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, daemon=True)
         self.vnc = CustomVNCClient()
         self.is_ready = asyncio.Event()
         self.vnc.add_event_listener("ready", self.on_ready)

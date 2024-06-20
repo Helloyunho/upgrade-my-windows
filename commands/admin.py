@@ -33,7 +33,7 @@ class Admin(commands.Cog):
         await self.bot.force_shutdown_domain()
         await asyncio.sleep(2)
         await self.bot.start_domain()
-        await interaction.followup.send("Restarted the VM.")
+        await interaction.followup.send("Rebooted the VM.")
 
 
 async def setup(bot):
