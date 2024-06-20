@@ -115,7 +115,7 @@ class UpgradeMyWindowsBot(commands.Bot):
     async def start_domain(self):
         if not self._is_vm_running:
             self.dom.create()
-            await self.connect_vnc()
+            await self.connect_vnc(reconnect=True)
 
     async def force_shutdown_domain(self):
         if self._is_vm_running:
