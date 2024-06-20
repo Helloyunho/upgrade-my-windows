@@ -2,10 +2,14 @@ import discord
 import io
 from discord.ext import commands
 from discord import app_commands
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import UpgradeMyWindowsBot
 
 
 class Screenshot(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: UpgradeMyWindowsBot):
         self.bot = bot
 
     @app_commands.command(

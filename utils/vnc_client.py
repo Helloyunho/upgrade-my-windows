@@ -57,6 +57,7 @@ class VNCClient(
 ):
     vnc: VNCDoToolClient
     is_ready: asyncio.Event
+    loop: asyncio.AbstractEventLoop
 
     def __init__(self):
         super().__init__()
@@ -80,6 +81,10 @@ class VNCClient(
     def y(self) -> int:
         return self.vnc.y
 
+    @property
+    def is_connected(self) -> bool:
+        return bool(self.vnc.writer and not self.vnc.writer.is_closing())
+
     async def connect_vnc(self):
         reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
         # reader, writer = await asyncio.open_connection("localhost", 5900)
@@ -87,35 +92,35 @@ class VNCClient(
         await self.vnc_refresh_loop()
 
     def disconnect(self):
-        asyncio.create_task(self.vnc.disconnect())
+        self.loop.create_task(self.vnc.disconnect())
         self.vnc.updateCommited.set()
 
     def keyDown(self, key: str):
-        asyncio.create_task(self.vnc.keyDown(key))
+        self.loop.create_task(self.vnc.keyDown(key))
 
     def keyUp(self, key: str):
-        asyncio.create_task(self.vnc.keyUp(key))
+        self.loop.create_task(self.vnc.keyUp(key))
 
     def mouseMove(self, x: int, y: int):
-        asyncio.create_task(self.vnc.mouseMove(x, y))
+        self.loop.create_task(self.vnc.mouseMove(x, y))
 
     def mouseDrag(self, x: int, y: int, step: int):
-        asyncio.create_task(self.vnc.mouseDrag(x, y, step))
+        self.loop.create_task(self.vnc.mouseDrag(x, y, step))
 
     def mouseDown(self, button: int):
-        asyncio.create_task(self.vnc.mouseDown(button))
+        self.loop.create_task(self.vnc.mouseDown(button))
 
     def mouseUp(self, button: int):
-        asyncio.create_task(self.vnc.mouseUp(button))
+        self.loop.create_task(self.vnc.mouseUp(button))
 
     def mousePress(self, button: int):
-        asyncio.create_task(self.vnc.mousePress(button))
+        self.loop.create_task(self.vnc.mousePress(button))
 
     def audioStreamBeginRequest(self):
-        asyncio.create_task(self.vnc.audioStreamBeginRequest())
+        self.loop.create_task(self.vnc.audioStreamBeginRequest())
 
     def audioStreamStopRequest(self):
-        asyncio.create_task(self.vnc.audioStreamStopRequest())
+        self.loop.create_task(self.vnc.audioStreamStopRequest())
 
     async def on_ready(self):
         await self.dispatch_event("ready")
@@ -123,12 +128,13 @@ class VNCClient(
 
     async def vnc_refresh_loop(self):
         await self.is_ready.wait()
-        while True:
-            if not self.vnc.writer or self.vnc.writer.is_closing():
-                await self.dispatch_event("disconnect")
-                break
+        while self.is_connected:
             await self.vnc.refreshScreen(incremental=True)
-            asyncio.create_task(self._on_screen_update())
+            self.loop.create_task(self._on_screen_update())
+
+        # when it reaches here, it means the connection is closed
+        await self.dispatch_event("disconnect")
+        self.is_ready.clear()
 
     async def _on_screen_update(self) -> None:
         await self.dispatch_event("screen_update", self.vnc.screen)
@@ -143,10 +149,10 @@ class VNCClient(
         await self.dispatch_event("audio_data", size, data)
 
     def run(self) -> None:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         try:
-            loop.run_until_complete(self.connect_vnc())
+            self.loop.run_until_complete(self.connect_vnc())
         except Exception as e:
             traceback.print_exc()
-            loop.run_until_complete(self.dispatch_event("disconnect"))
+            self.loop.run_until_complete(self.dispatch_event("disconnect"))

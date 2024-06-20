@@ -2,13 +2,16 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import UpgradeMyWindowsBot
 
 from config import os_list
 
 
 class Change(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: UpgradeMyWindowsBot):
         self.bot = bot
 
     change_group = app_commands.Group(name="change", description="Change VM settings.")
@@ -43,17 +46,17 @@ class Change(commands.Cog):
             await interaction.response.send_message("OS not found.")
             return
 
-        self.bot.set_vcpus(os_preset["vcpus"])
-        self.bot.set_memory(os_preset["memory"])
-        self.bot.set_os(os)
+        await self.bot.set_vcpus(os_preset["vcpus"])
+        await self.bot.set_memory(os_preset["memory"])
+        await self.bot.set_os(os)
         if os_preset["cdrom"]:
-            self.bot.set_device(os_preset["cdrom"][0])
+            await self.bot.set_device(os_preset["cdrom"][0])
         else:
-            self.bot.set_device()
+            await self.bot.set_device()
         if os_preset["floppy"]:
-            self.bot.set_device(os_preset["floppy"][0], "floppy")
+            await self.bot.set_device(os_preset["floppy"][0], "floppy")
         else:
-            self.bot.set_device(type="floppy")
+            await self.bot.set_device(type="floppy")
 
         await interaction.response.send_message(
             "VM has been updated. Restart(or shut down) the VM to apply the cpu and memory changes."
@@ -83,7 +86,7 @@ class Change(commands.Cog):
             await interaction.response.send_message("VM is not running.")
             return
 
-        info = self.bot.get_current_info()
+        info = await self.bot.get_current_info()
         if not info:
             await interaction.response.send_message("VM is not running.")
             return
@@ -115,7 +118,7 @@ class Change(commands.Cog):
     async def change_image_image_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
-        info = self.bot.get_current_info()
+        info = await self.bot.get_current_info()
         if not info:
             return []
 

@@ -2,11 +2,14 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import UpgradeMyWindowsBot
 
 
 class Eject(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: UpgradeMyWindowsBot):
         self.bot = bot
 
     @app_commands.command(
@@ -28,11 +31,11 @@ class Eject(commands.Cog):
             return
 
         if type == "both":
-            self.bot.set_device(None)
-            self.bot.set_device(None, "floppy")
+            await self.bot.set_device(None)
+            await self.bot.set_device(None, "floppy")
             await interaction.response.send_message("Both devices have been ejected.")
         else:
-            self.bot.set_device(None, type)
+            await self.bot.set_device(None, type)
             await interaction.response.send_message("Device has been ejected.")
 
 

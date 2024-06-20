@@ -2,6 +2,10 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import asyncio
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import UpgradeMyWindowsBot
 
 
 MOUSE_BUTTONS = {"left": 1, "middle": 2, "right": 3}
@@ -15,7 +19,7 @@ WHEEL_BUTTONS = {
 
 
 class Mouse(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: UpgradeMyWindowsBot):
         self.bot = bot
 
     move_group = app_commands.Group(name="move", description="Moves the element.")
@@ -40,7 +44,7 @@ class Mouse(commands.Cog):
     async def move_xy_command(
         self, interaction: discord.Interaction, x: int, y: int, relative: bool = False
     ):
-        if not self.bot.vnc:
+        if not self.bot.vnc or not self.bot.vnc.screen:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -67,7 +71,7 @@ class Mouse(commands.Cog):
         description="Moves the mouse to the center of the screen.",
     )
     async def move_center_command(self, interaction: discord.Interaction):
-        if not self.bot.vnc:
+        if not self.bot.vnc or not self.bot.vnc.screen:
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -84,7 +88,7 @@ class Mouse(commands.Cog):
         description="Resets the mouse cursor to the top-left of the screen.",
     )
     async def reset_cursor_command(self, interaction: discord.Interaction):
-        if not self.bot.vnc:
+        if not self.bot.vnc or not self.bot.vnc.screen:
             await interaction.response.send_message("VM is not running.")
             return
 

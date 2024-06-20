@@ -1,15 +1,19 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import UpgradeMyWindowsBot
 
 
 class Info(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: UpgradeMyWindowsBot):
         self.bot = bot
 
     @app_commands.command(name="info", description="Shows the current VM information.")
     async def info_command(self, interaction: discord.Interaction):
-        info = self.bot.get_current_info()
+        info = await self.bot.get_current_info()
         if not info or not self.bot.vnc or not self.bot.vnc.screen:
             await interaction.response.send_message("VM is not running.")
             return

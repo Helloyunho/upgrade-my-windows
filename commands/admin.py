@@ -2,12 +2,16 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import asyncio
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import UpgradeMyWindowsBot
 
 from utils.is_me import is_me
 
 
 class Admin(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: UpgradeMyWindowsBot):
         self.bot = bot
 
     @app_commands.command(
@@ -26,9 +30,9 @@ class Admin(commands.Cog):
     )
     async def reboot_command(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        self.bot.force_shutdown_domain()
+        await self.bot.force_shutdown_domain()
         await asyncio.sleep(2)
-        self.bot.start_domain()
+        await self.bot.start_domain()
         await interaction.followup.send("Restarted the VM.")
 
 

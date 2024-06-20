@@ -5,7 +5,13 @@ import asyncio
 from vncdotool.client import KEYMAP
 from discord.ext import commands
 from discord import app_commands
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from main import UpgradeMyWindowsBot
+
+
+TYPE_DELAY = 0.001
 
 BACKTICK_RE = re.compile(r"(?<=(?<!\\)(?:\\\\)*)`((?:[^`\\]|\\.)*)`")
 HYPEN_RE = re.compile(r"(?<=(?<!\\)(?:\\\\)*)-")
@@ -23,7 +29,7 @@ for value in KEYMAP.values():
 
 
 class Keyboard(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: UpgradeMyWindowsBot):
         self.bot = bot
 
     async def char_split_press(
@@ -36,10 +42,10 @@ class Keyboard(commands.Cog):
             char = chr(BACKSLASH_KEYMAP[char]) if char in BACKSLASH_KEYMAP else char
             if key_down:
                 self.bot.vnc.keyDown(char)
-                await asyncio.sleep(0.0001)
+                await asyncio.sleep(TYPE_DELAY)
             if key_up:
                 self.bot.vnc.keyUp(char)
-                await asyncio.sleep(0.0001)
+                await asyncio.sleep(TYPE_DELAY)
 
     async def key_press(self, text: str, key_down: bool = True, key_up: bool = True):
         if not self.bot.vnc:
@@ -63,10 +69,10 @@ class Keyboard(commands.Cog):
                 if converted:
                     if key_down and (i - length) < 0:
                         self.bot.vnc.keyDown(chr(converted))
-                        await asyncio.sleep(0.0001)
+                        await asyncio.sleep(TYPE_DELAY)
                     elif key_up and (i - length) >= 0:
                         self.bot.vnc.keyUp(chr(converted))
-                        await asyncio.sleep(0.0001)
+                        await asyncio.sleep(TYPE_DELAY)
                 else:
                     if key_down and (i - length) < 0:
                         await self.char_split_press(sequence, key_down, False)

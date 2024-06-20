@@ -47,10 +47,10 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
         self.audio_buffer = b""
 
-    def connect_qemu(self, reconnect=False):
+    async def connect_qemu(self, reconnect=False):
         if self.virt or self.dom or self.vnc:
             if reconnect:
-                self.disconnect_qemu()
+                await self.disconnect_qemu()
             else:
                 return
         self.virt = libvirt.open()
@@ -61,13 +61,13 @@ class UpgradeMyWindowsBot(commands.Bot):
         while self.dom:
             await asyncio.sleep(1)
             if not self.dom.isActive() == 1:
-                self.start_domain()
-                self.connect_vnc(reconnect=True)
+                await self.start_domain()
+                await self.connect_vnc(reconnect=True)
 
-    def connect_vnc(self, reconnect=False):
+    async def connect_vnc(self, reconnect=False):
         if self.vnc:
             if reconnect:
-                self.disconnect_vnc()
+                await self.disconnect_vnc()
             else:
                 return
         self.vnc = VNCClient()
@@ -97,29 +97,29 @@ class UpgradeMyWindowsBot(commands.Bot):
                 self.display_window.update_audio(self.audio_buffer)
             self.audio_buffer = b""
 
-    def disconnect_vnc(self):
+    async def disconnect_vnc(self):
         if self.vnc:
             self.vnc.disconnect()
             self.vnc = None
 
-    def shutdown_domain(self):
+    async def shutdown_domain(self):
         if self.dom and self.dom.isActive() == 1:
-            self.disconnect_vnc()
+            await self.disconnect_vnc()
             self.dom.shutdown()
 
-    def start_domain(self):
+    async def start_domain(self):
         if self.dom and not self.dom.isActive() == 1:
             self.dom.create()
-            self.connect_vnc()
+            await self.connect_vnc()
 
-    def force_shutdown_domain(self):
+    async def force_shutdown_domain(self):
         if self.dom and self.dom.isActive() == 1:
-            self.disconnect_vnc()
+            await self.disconnect_vnc()
             self.dom.destroy()
 
-    def disconnect_qemu(self):
+    async def disconnect_qemu(self):
         if self.vnc:
-            self.disconnect_vnc()
+            await self.disconnect_vnc()
         if self.vm_loop:
             self.vm_loop.cancel()
             self.vm_loop = None
@@ -130,9 +130,9 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.virt = None
 
     async def setup_hook(self):
-        self.connect_qemu()
-        self.start_domain()
-        self.connect_vnc()
+        await self.connect_qemu()
+        await self.start_domain()
+        await self.connect_vnc()
 
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
@@ -144,7 +144,7 @@ class UpgradeMyWindowsBot(commands.Bot):
             return
         self.display_window.close()
         self.display_window.join()
-        self.disconnect_qemu()
+        await self.disconnect_qemu()
         await super().close()
 
     async def get_screen_img(self) -> Image.Image | None:
@@ -153,11 +153,11 @@ class UpgradeMyWindowsBot(commands.Bot):
 
         return self.vnc.screen
 
-    def set_vcpus(self, vcpus: int):
+    async def set_vcpus(self, vcpus: int):
         if self.dom:
             self.dom.setVcpusFlags(vcpus, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
-    def set_memory(self, memory: int):
+    async def set_memory(self, memory: int):
         if self.dom:
             self.dom.setMemoryFlags(
                 memory,
@@ -165,7 +165,7 @@ class UpgradeMyWindowsBot(commands.Bot):
             )
             self.dom.setMemoryFlags(memory, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
-    def set_device(
+    async def set_device(
         self, path: str | None = None, type: Literal["cdrom", "floppy"] = "cdrom"
     ):
         if self.dom:
@@ -188,7 +188,7 @@ class UpgradeMyWindowsBot(commands.Bot):
                     )
                     break
 
-    def set_os(self, os: str):
+    async def set_os(self, os: str):
         if self.dom:
             raw_xml = self.dom.metadata(
                 libvirt.VIR_DOMAIN_METADATA_ELEMENT,
@@ -207,7 +207,7 @@ class UpgradeMyWindowsBot(commands.Bot):
                 | libvirt.VIR_DOMAIN_AFFECT_CONFIG,
             )
 
-    def get_current_info(self) -> VMInfo | None:
+    async def get_current_info(self) -> VMInfo | None:
         if self.dom:
             memsize = self.dom.maxMemory()
             vcpus = self.dom.vcpusFlags()
