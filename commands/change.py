@@ -106,7 +106,7 @@ class Change(commands.Cog):
         except ValueError:
             await interaction.response.send_message("Image not found.")
             return
-        self.bot.set_device(os_preset[type][index], type)  # type: ignore
+        await self.bot.set_device(os_preset[type][index], type)  # type: ignore
 
         await interaction.response.send_message("Image has been updated.")
 
