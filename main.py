@@ -42,10 +42,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.display_window.start()
         self.virt = libvirt.open()
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
-        self.vnc = VNCClient()
-        self.vnc.add_event_listener("screen_update", self._on_screen_update)
-        self.vnc.add_event_listener("ready", self._on_vnc_ready)
-        self.vnc.add_event_listener("audio_data", self._on_audio_data)
+        self.vnc = VNCClient()  # dummy
         self.vm_loop = None
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
         self.audio_buffer = b""
@@ -85,6 +82,9 @@ class UpgradeMyWindowsBot(commands.Bot):
             else:
                 return
         self.vnc = VNCClient()
+        self.vnc.add_event_listener("screen_update", self._on_screen_update)
+        self.vnc.add_event_listener("ready", self._on_vnc_ready)
+        self.vnc.add_event_listener("audio_data", self._on_audio_data)
         self.vnc.start()
 
     async def _on_screen_update(self, image: Image.Image | None):
