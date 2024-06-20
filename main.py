@@ -210,7 +210,7 @@ class UpgradeMyWindowsBot(commands.Bot):
     def get_current_info(self) -> VMInfo | None:
         if self.dom:
             memsize = self.dom.maxMemory()
-            vcpus = self.dom.vcpus()[0][0][1]
+            vcpus = self.dom.vcpusFlags()
 
             raw_xml = self.dom.XMLDesc()
             xml = minidom.parseString(raw_xml)
