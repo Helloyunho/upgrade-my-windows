@@ -92,35 +92,35 @@ class VNCClient(
         await self.vnc_refresh_loop()
 
     def disconnect(self):
-        self.loop.create_task(self.vnc.disconnect())
+        asyncio.create_task(self.vnc.disconnect())
         self.vnc.updateCommited.set()
 
     def keyDown(self, key: str):
-        self.loop.create_task(self.vnc.keyDown(key))
+        asyncio.create_task(self.vnc.keyDown(key))
 
     def keyUp(self, key: str):
-        self.loop.create_task(self.vnc.keyUp(key))
+        asyncio.create_task(self.vnc.keyUp(key))
 
     def mouseMove(self, x: int, y: int):
-        self.loop.create_task(self.vnc.mouseMove(x, y))
+        asyncio.create_task(self.vnc.mouseMove(x, y))
 
     def mouseDrag(self, x: int, y: int, step: int):
-        self.loop.create_task(self.vnc.mouseDrag(x, y, step))
+        asyncio.create_task(self.vnc.mouseDrag(x, y, step))
 
     def mouseDown(self, button: int):
-        self.loop.create_task(self.vnc.mouseDown(button))
+        asyncio.create_task(self.vnc.mouseDown(button))
 
     def mouseUp(self, button: int):
-        self.loop.create_task(self.vnc.mouseUp(button))
+        asyncio.create_task(self.vnc.mouseUp(button))
 
     def mousePress(self, button: int):
-        self.loop.create_task(self.vnc.mousePress(button))
+        asyncio.create_task(self.vnc.mousePress(button))
 
     def audioStreamBeginRequest(self):
-        self.loop.create_task(self.vnc.audioStreamBeginRequest())
+        asyncio.create_task(self.vnc.audioStreamBeginRequest())
 
     def audioStreamStopRequest(self):
-        self.loop.create_task(self.vnc.audioStreamStopRequest())
+        asyncio.create_task(self.vnc.audioStreamStopRequest())
 
     async def on_ready(self):
         await self.dispatch_event("ready")
@@ -130,7 +130,7 @@ class VNCClient(
         await self.is_ready.wait()
         while self.is_connected:
             await self.vnc.refreshScreen(incremental=True)
-            self.loop.create_task(self._on_screen_update())
+            asyncio.create_task(self._on_screen_update())
 
         # when it reaches here, it means the connection is closed
         await self.dispatch_event("disconnect")
