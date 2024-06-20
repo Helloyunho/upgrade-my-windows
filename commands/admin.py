@@ -11,7 +11,7 @@ from utils.is_me import is_me
 
 
 class Admin(commands.Cog):
-    def __init__(self, bot: UpgradeMyWindowsBot):
+    def __init__(self, bot: "UpgradeMyWindowsBot"):
         self.bot = bot
 
     @app_commands.command(

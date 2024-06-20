@@ -29,7 +29,7 @@ for value in KEYMAP.values():
 
 
 class Keyboard(commands.Cog):
-    def __init__(self, bot: UpgradeMyWindowsBot):
+    def __init__(self, bot: "UpgradeMyWindowsBot"):
         self.bot = bot
 
     async def char_split_press(

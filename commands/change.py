@@ -11,7 +11,7 @@ from config import os_list
 
 
 class Change(commands.Cog):
-    def __init__(self, bot: UpgradeMyWindowsBot):
+    def __init__(self, bot: "UpgradeMyWindowsBot"):
         self.bot = bot
 
     change_group = app_commands.Group(name="change", description="Change VM settings.")

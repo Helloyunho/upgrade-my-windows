@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 class Help(commands.Cog):
-    def __init__(self, bot: UpgradeMyWindowsBot):
+    def __init__(self, bot: "UpgradeMyWindowsBot"):
         self.bot = bot
 
     @app_commands.command(name="help", description="Shows the help message.")

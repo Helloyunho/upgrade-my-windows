@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class Screenshot(commands.Cog):
-    def __init__(self, bot: UpgradeMyWindowsBot):
+    def __init__(self, bot: "UpgradeMyWindowsBot"):
         self.bot = bot
 
     @app_commands.command(

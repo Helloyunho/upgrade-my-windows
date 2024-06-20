@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 class Info(commands.Cog):
-    def __init__(self, bot: UpgradeMyWindowsBot):
+    def __init__(self, bot: "UpgradeMyWindowsBot"):
         self.bot = bot
 
     @app_commands.command(name="info", description="Shows the current VM information.")

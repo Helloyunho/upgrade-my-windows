@@ -19,7 +19,7 @@ WHEEL_BUTTONS = {
 
 
 class Mouse(commands.Cog):
-    def __init__(self, bot: UpgradeMyWindowsBot):
+    def __init__(self, bot: "UpgradeMyWindowsBot"):
         self.bot = bot
 
     move_group = app_commands.Group(name="move", description="Moves the element.")
