@@ -68,9 +68,8 @@ class UpgradeMyWindowsBot(commands.Bot):
                 await self.disconnect_qemu()
             else:
                 return
-        else:
-            self.virt = libvirt.open()
-            self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
+        self.virt = libvirt.open()
+        self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
 
     async def vm_start_loop(self):
         while self._is_virt_connected:
@@ -85,6 +84,7 @@ class UpgradeMyWindowsBot(commands.Bot):
                 await self.disconnect_vnc()
             else:
                 return
+        self.vnc = VNCClient()
         self.vnc.start()
 
     async def _on_screen_update(self, image: Image.Image | None):
