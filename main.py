@@ -166,6 +166,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.logger.info("Doing initial setup")
         await self.connect_qemu()
         await self.start_domain()
+        await self.connect_vnc()
 
     async def on_ready(self):
         self.logger.info(f"Logged on as {self.user}!")
