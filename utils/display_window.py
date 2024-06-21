@@ -20,7 +20,7 @@ class DisplayWindow(threading.Thread):
     def update_frame(self, image: Image.Image):
         numpy_image = np.array(image)
         img = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
-        self.screen.put(img)
+        self.screen.put(img, block=False)
 
     def update_audio(self, data: bytes):
         pygame.mixer.Sound(buffer=data).play()
@@ -32,5 +32,6 @@ class DisplayWindow(threading.Thread):
             if not self.screen.empty():
                 image = self.screen.get()
                 cv2.imshow("Upgrade My Windows", image)
+            cv2.waitKey(0)
 
         cv2.destroyAllWindows()
