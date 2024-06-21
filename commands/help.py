@@ -5,8 +5,8 @@ from utils.handle_exception import handle_exception
 
 
 class Help(CogLogger):
-    @handle_exception()
     @app_commands.command(name="help", description="Shows the help message.")
+    @handle_exception()
     async def help_command(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="Upgrade My Windows",

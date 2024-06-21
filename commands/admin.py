@@ -6,12 +6,12 @@ from utils.is_me import is_me
 
 
 class Admin(CogLogger):
-    @handle_exception()
     @app_commands.command(
         name="sync",
         description="Syncs the bot's commands with Discord.",
     )
     @is_me()
+    @handle_exception()
     async def sync_command(self, interaction: discord.Interaction):
         self.logger.debug("Command sync requested")
         await self.bot.tree.sync()
@@ -19,11 +19,11 @@ class Admin(CogLogger):
             self.bot.tree.copy_global_to(guild=discord.Object(id=interaction.guild_id))
         await interaction.response.send_message("Commands synced.")
 
-    @handle_exception()
     @app_commands.command(
         name="reboot",
         description="Reboots the VM.",
     )
+    @handle_exception()
     async def reboot_command(self, interaction: discord.Interaction):
         self.logger.debug("VM reboot requested")
         await interaction.response.defer()

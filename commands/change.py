@@ -9,7 +9,6 @@ from utils.handle_exception import handle_exception
 class Change(CogLogger):
     change_group = app_commands.Group(name="change", description="Change VM settings.")
 
-    @handle_exception()
     @change_group.command(
         name="os",
         description="Changes the vm preset and disk image selection to selected OS.",
@@ -26,6 +25,7 @@ class Change(CogLogger):
             for os_name in [preset["os"] for preset in os_list]
         ]
     )
+    @handle_exception()
     async def change_os_command(
         self,
         interaction: discord.Interaction,
@@ -59,7 +59,6 @@ class Change(CogLogger):
             "VM has been updated. Restart(or shut down) the VM to apply the cpu and memory changes."
         )
 
-    @handle_exception()
     @change_group.command(
         name="image",
         description="Changes the disc(or floppy disk) image to selected image.",
@@ -74,6 +73,7 @@ class Change(CogLogger):
             app_commands.Choice(name="Floppy", value="floppy"),
         ]
     )
+    @handle_exception()
     async def change_image_command(
         self,
         interaction: discord.Interaction,
@@ -113,8 +113,8 @@ class Change(CogLogger):
 
         await interaction.response.send_message("Image has been updated.")
 
-    @handle_exception()
     @change_image_command.autocomplete("image")
+    @handle_exception()
     async def change_image_image_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:

@@ -6,7 +6,6 @@ from utils.handle_exception import handle_exception
 
 
 class Eject(CogLogger):
-    @handle_exception()
     @app_commands.command(
         name="eject", description="Ejects the disc(or floppy disk, or both)."
     )
@@ -18,6 +17,7 @@ class Eject(CogLogger):
             app_commands.Choice(name="Both", value="both"),
         ]
     )
+    @handle_exception()
     async def eject_command(
         self, interaction: discord.Interaction, type: Literal["cdrom", "floppy", "both"]
     ):

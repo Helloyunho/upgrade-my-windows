@@ -5,8 +5,8 @@ from utils.handle_exception import handle_exception
 
 
 class Info(CogLogger):
-    @handle_exception()
     @app_commands.command(name="info", description="Shows the current VM information.")
+    @handle_exception()
     async def info_command(self, interaction: discord.Interaction):
         self.logger.debug("Info requested")
         info = await self.bot.get_current_info()

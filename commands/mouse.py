@@ -18,16 +18,15 @@ WHEEL_BUTTONS = {
 class Mouse(CogLogger):
     move_group = app_commands.Group(name="move", description="Moves the element.")
 
-    @handle_exception()
     @move_group.command(name="ai", description="Moves the element using AI.")
     @app_commands.describe(
         prompt="Describe the element you want to move the mouse cursor to."
     )
+    @handle_exception()
     async def move_command(self, interaction: discord.Interaction, prompt: str):
         # TODO: Ask the AI to move to the element
         await interaction.response.send_message("Not implemented yet.")
 
-    @handle_exception()
     @move_group.command(
         name="xy",
         description="Moves the mouse using XY coordinates. (0, 0) is the top-left corner.",
@@ -37,6 +36,7 @@ class Mouse(CogLogger):
         y="The Y coordinate.",
         relative="Whether the coordinates are relative to the current position.",
     )
+    @handle_exception()
     async def move_xy_command(
         self, interaction: discord.Interaction, x: int, y: int, relative: bool = False
     ):
@@ -65,11 +65,11 @@ class Mouse(CogLogger):
 
         await interaction.followup.send(f"Moved the mouse cursor to {x}, {y}.")
 
-    @handle_exception()
     @move_group.command(
         name="center",
         description="Moves the mouse to the center of the screen.",
     )
+    @handle_exception()
     async def move_center_command(self, interaction: discord.Interaction):
         self.logger.debug("Moving mouse to center requested")
         if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
@@ -85,11 +85,11 @@ class Mouse(CogLogger):
 
         await interaction.followup.send(f"Moved the mouse to the center of the screen.")
 
-    @handle_exception()
     @app_commands.command(
         name="reset_cursor",
         description="Resets the mouse cursor to the top-left of the screen.",
     )
+    @handle_exception()
     async def reset_cursor_command(self, interaction: discord.Interaction):
         self.logger.debug("Resetting the mouse cursor requested")
         if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
@@ -104,7 +104,6 @@ class Mouse(CogLogger):
 
         await interaction.followup.send("Reset the mouse cursor.")
 
-    @handle_exception()
     @app_commands.command(name="click", description="Clicks the mouse.")
     @app_commands.describe(button="The button to click.")
     @app_commands.choices(
@@ -114,6 +113,7 @@ class Mouse(CogLogger):
             app_commands.Choice(name="Right", value="right"),
         ]
     )
+    @handle_exception()
     async def click_command(
         self, interaction: discord.Interaction, button: str = "left"
     ):
@@ -136,7 +136,6 @@ class Mouse(CogLogger):
 
         await interaction.followup.send("Clicked the mouse.")
 
-    @handle_exception()
     @app_commands.command(name="scroll", description="Scrolls the mouse.")
     @app_commands.describe(
         direction="The direction to scroll.", amount="The amount to scroll."
@@ -149,6 +148,7 @@ class Mouse(CogLogger):
             app_commands.Choice(name="Right", value="right"),
         ]
     )
+    @handle_exception()
     async def scroll_command(
         self, interaction: discord.Interaction, direction: str = "up", amount: int = 1
     ):
@@ -174,7 +174,6 @@ class Mouse(CogLogger):
 
     mouse_group = app_commands.Group(name="mouse", description="Controls the mouse.")
 
-    @handle_exception()
     @mouse_group.command(name="down", description="Presses a mouse button.")
     @app_commands.describe(button="The button to press.")
     @app_commands.choices(
@@ -184,6 +183,7 @@ class Mouse(CogLogger):
             app_commands.Choice(name="Right", value="right"),
         ]
     )
+    @handle_exception()
     async def mouse_down_command(
         self, interaction: discord.Interaction, button: str = "left"
     ):
@@ -204,7 +204,6 @@ class Mouse(CogLogger):
 
         await interaction.followup.send("Pressed the mouse button.")
 
-    @handle_exception()
     @mouse_group.command(name="up", description="Depresses a mouse button.")
     @app_commands.describe(button="The button to depress.")
     @app_commands.choices(
@@ -214,6 +213,7 @@ class Mouse(CogLogger):
             app_commands.Choice(name="Right", value="right"),
         ]
     )
+    @handle_exception()
     async def mouse_up_command(
         self, interaction: discord.Interaction, button: str = "left"
     ):

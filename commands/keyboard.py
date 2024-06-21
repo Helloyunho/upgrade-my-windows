@@ -80,12 +80,12 @@ class Keyboard(CogLogger):
         if len(texts) > len(matches):
             await self.char_split_press(texts[-1], key_down, key_up)
 
-    @handle_exception()
     @app_commands.command(
         name="type",
         description="Types the text like you would type on your keyboard. Nothing special...",
     )
     @app_commands.describe(text="The text you want to type.")
+    @handle_exception()
     async def type_command(self, interaction: discord.Interaction, text: str):
         self.logger.debug(f"Typing {text} requested")
         if not self.bot._is_vnc_connected:
@@ -102,9 +102,9 @@ class Keyboard(CogLogger):
         name="key", description="Presses(or depresses) a key."
     )
 
-    @handle_exception()
     @key_group.command(name="down", description="Presses a key.")
     @app_commands.describe(key="The key you want to press.")
+    @handle_exception()
     async def key_down_command(self, interaction: discord.Interaction, key: str):
         self.logger.debug(f"Pressing {key} requested")
         if not self.bot._is_vnc_connected:
@@ -117,9 +117,9 @@ class Keyboard(CogLogger):
 
         await interaction.followup.send("Key has been pressed.")
 
-    @handle_exception()
     @key_group.command(name="up", description="Depresses a key.")
     @app_commands.describe(key="The key you want to depress.")
+    @handle_exception()
     async def key_up_command(self, interaction: discord.Interaction, key: str):
         self.logger.debug(f"Depressing {key} requested")
         if not self.bot._is_vnc_connected:

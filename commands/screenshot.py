@@ -6,11 +6,11 @@ from utils.handle_exception import handle_exception
 
 
 class Screenshot(CogLogger):
-    @handle_exception()
     @app_commands.command(
         name="screenshot",
         description="Takes a screenshot of the VM and sends it to you.",
     )
+    @handle_exception()
     async def screenshot_command(self, interaction: discord.Interaction):
         self.logger.debug("Screenshot requested")
         img = await self.bot.get_screen_img()
