@@ -1,12 +1,13 @@
 import pygame
+from PIL import Image, ImageOps
 from utils.logger import get_logger
 
 
 class DisplayWindow:
     def __init__(self):
         pygame.mixer.pre_init(44100, -16, 2, buffer=512)
+        self.screen = None
         pygame.init()
-        self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Upgrade My Windows")
         self.running = True
         self.logger = get_logger(self.__class__.__name__)
@@ -14,22 +15,21 @@ class DisplayWindow:
     def close(self):
         self.running = False
 
-    async def update_frame(self, image):
-        mode = image.mode
-        size = image.size
-        data = image.tobytes()
+    async def update_frame(self, image: Image.Image):
+        if not self.screen:
+            self.screen = pygame.display.set_mode((1600, 900))
+        self.screen.fill((0, 0, 0))
+        _image = ImageOps.contain(image, (1600, 900), Image.Resampling.LANCZOS)
+        mode = _image.mode
+        size = _image.size
+        data = _image.tobytes()
 
-        pygame_image = pygame.image.fromstring(data, size, mode)
-        image_width, image_height = image.size
-        if (
-            image_width != self.screen.get_width()
-            or image_height != self.screen.get_height()
-        ):
-            self.logger.debug(f"Resizing window to {image_width}x{image_height}")
-            self.screen = pygame.display.set_mode((image_width, image_height))
-            self.screen.fill((0, 0, 0))
-
-        self.screen.blit(pygame_image, (0, 0))
+        pygame_image = pygame.image.fromstring(data, size, mode)  # type: ignore
+        image_width, image_height = _image.size
+        # center the image
+        x = (1600 - image_width) // 2
+        y = (900 - image_height) // 2
+        self.screen.blit(pygame_image, (x, y))
         pygame.display.flip()
 
     async def update_audio(self, data: bytes):
