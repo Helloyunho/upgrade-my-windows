@@ -34,6 +34,6 @@ class DisplayWindow(threading.Thread):
             if not self.screen.empty():
                 image = self.screen.get()
                 cv2.imshow("Upgrade My Windows", image)
-            cv2.waitKey(0)
+            cv2.waitKey(1)
 
         cv2.destroyAllWindows()
