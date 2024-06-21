@@ -6,11 +6,6 @@ from utils.logger import get_logger
 class DisplayWindow(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
-        pygame.mixer.pre_init(44100, -16, 2, buffer=512)
-        pygame.init()
-        self.screen = pygame.display.set_mode((800, 600))
-        pygame.display.set_caption("Upgrade My Windows")
-        self.running = True
         self.logger = get_logger(self.__class__.__name__)
 
     def close(self):
@@ -38,6 +33,11 @@ class DisplayWindow(threading.Thread):
         pygame.mixer.Sound(buffer=data).play()
 
     def run(self):
+        pygame.mixer.pre_init(44100, -16, 2, buffer=512)
+        pygame.init()
+        self.screen = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption("Upgrade My Windows")
+        self.running = True
         while self.running:
             pygame.display.flip()
 
