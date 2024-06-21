@@ -83,7 +83,12 @@ class VNCClient(
 
     @property
     def is_connected(self) -> bool:
-        return bool(self.vnc.writer and not self.vnc.writer.is_closing())
+        return bool(
+            self.vnc.writer
+            and not self.vnc.writer.is_closing()
+            and self.vnc.reader
+            and not self.vnc.reader.at_eof()
+        )
 
     async def connect_vnc(self):
         reader, writer = await asyncio.open_unix_connection("/tmp/umw-vnc.sock")
