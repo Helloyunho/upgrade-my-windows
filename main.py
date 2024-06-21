@@ -35,13 +35,13 @@ class UpgradeMyWindowsBot(commands.Bot):
     image_path: Path
     display_window: DisplayWindow
     vm_loop: asyncio.Task | None
+    pygame_loop: asyncio.Task | None
     audio_buffer: bytes
     logger: logging.Logger
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.display_window = DisplayWindow()
-        self.display_window.start()
         self.virt = libvirt.open()
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
         self.vnc = VNCClient()  # dummy
@@ -106,7 +106,7 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def _on_screen_update(self, image: Image.Image | None):
         if image:
-            self.display_window.update_frame(image)
+            await self.display_window.update_frame(image)
 
     async def _on_vnc_ready(self):
         if self._is_vnc_connected:
@@ -118,7 +118,7 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.audio_buffer += data
         else:
             if self._is_vnc_connected and self.display_window.running:
-                self.display_window.update_audio(self.audio_buffer)
+                await self.display_window.update_audio(self.audio_buffer)
             self.audio_buffer = b""
 
     async def disconnect_vnc(self):
@@ -164,6 +164,7 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def setup_hook(self):
         self.logger.info("Doing initial setup")
+        pygame_task = self.loop.run_in_executor(None, self.display_window.run)
         await self.connect_qemu()
         await self.start_domain()
         await self.connect_vnc()
@@ -178,7 +179,8 @@ class UpgradeMyWindowsBot(commands.Bot):
         if self._closed:
             return
         self.display_window.close()
-        self.display_window.join()
+        if self.pygame_loop:
+            self.pygame_loop.cancel()
         await self.disconnect_qemu()
         await super().close()
 
