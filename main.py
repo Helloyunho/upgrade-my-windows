@@ -35,7 +35,7 @@ class UpgradeMyWindowsBot(commands.Bot):
     image_path: Path
     display_window: DisplayWindow
     vm_loop: asyncio.Task | None
-    pygame_loop: asyncio.Task | None
+    pygame_loop: asyncio.Future | None
     audio_buffer: bytes
     logger: logging.Logger
 
@@ -46,6 +46,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
         self.vnc = VNCClient()  # dummy
         self.vm_loop = None
+        self.pygame_loop = None
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
         self.audio_buffer = b""
         self.logger = get_logger(self.__class__.__name__)
@@ -164,7 +165,7 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def setup_hook(self):
         self.logger.info("Doing initial setup")
-        pygame_task = self.loop.run_in_executor(None, self.display_window.run)
+        self.pygame_task = self.loop.run_in_executor(None, self.display_window.run)
         await self.connect_qemu()
         await self.start_domain()
         await self.connect_vnc()
