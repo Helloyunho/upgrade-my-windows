@@ -107,7 +107,7 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def _on_screen_update(self, image: Image.Image | None):
         if image:
-            await self.display_window.update_frame(image)
+            self.loop.create_task(self.display_window.update_frame(image))
 
     async def _on_vnc_ready(self):
         if self._is_vnc_connected:
