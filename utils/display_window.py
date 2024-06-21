@@ -27,7 +27,9 @@ class DisplayWindow(threading.Thread):
 
     def run(self):
         pygame.mixer.init(44100, -16, 2, buffer=512)
-        cv2.namedWindow("Upgrade My Windows", cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow(
+            "Upgrade My Windows", cv2.WINDOW_AUTOSIZE | cv2.WINDOW_GUI_NORMAL
+        )
         while self.running:
             if not self.screen.empty():
                 image = self.screen.get()
