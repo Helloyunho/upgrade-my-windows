@@ -37,15 +37,13 @@ class DisplayWindow(threading.Thread):
         pygame.display.flip()
 
     def update_frame(self, image: Image.Image):
-        if self.loop:
-            self.loop.create_task(self._update_frame(image))
+        asyncio.create_task(self._update_frame(image))
 
     async def _update_audio(self, data: bytes):
         pygame.mixer.Sound(buffer=data).play()
 
     def update_audio(self, data: bytes):
-        if self.loop:
-            self.loop.create_task(self._update_audio(data))
+        asyncio.create_task(self._update_audio(data))
 
     def run(self):
         self.loop = asyncio.new_event_loop()
