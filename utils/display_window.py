@@ -1,5 +1,6 @@
 import pygame
 import threading
+from utils.logger import get_logger
 
 
 class DisplayWindow(threading.Thread):
@@ -10,6 +11,7 @@ class DisplayWindow(threading.Thread):
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Upgrade My Windows")
         self.running = True
+        self.logger = get_logger(self.__class__.__name__)
 
     def close(self):
         self.running = False
@@ -25,6 +27,7 @@ class DisplayWindow(threading.Thread):
             image_width != self.screen.get_width()
             or image_height != self.screen.get_height()
         ):
+            self.logger.debug(f"Resizing window to {image_width}x{image_height}")
             self.screen = pygame.display.set_mode((image_width, image_height))
             self.screen.fill((0, 0, 0))
 

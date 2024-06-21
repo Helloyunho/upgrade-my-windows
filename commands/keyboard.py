@@ -1,14 +1,11 @@
+import asyncio
 import codecs
 import discord
 import regex as re
-import asyncio
-from vncdotool.client import KEYMAP
-from discord.ext import commands
 from discord import app_commands
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from main import UpgradeMyWindowsBot
+from utils.cog_logger import CogLogger
+from utils.handle_exception import handle_exception
+from vncdotool.client import KEYMAP
 
 
 TYPE_DELAY = 0.001
@@ -28,10 +25,8 @@ for value in KEYMAP.values():
     BACKSLASH_KEYMAP[chr(value)] = value
 
 
-class Keyboard(commands.Cog):
-    def __init__(self, bot: "UpgradeMyWindowsBot"):
-        self.bot = bot
-
+class Keyboard(CogLogger):
+    @handle_exception()
     async def char_split_press(
         self, text: str, key_down: bool = True, key_up: bool = True
     ):
@@ -47,8 +42,11 @@ class Keyboard(commands.Cog):
                 self.bot.vnc.keyUp(char)
                 await asyncio.sleep(TYPE_DELAY)
 
+    @handle_exception()
     async def key_press(self, text: str, key_down: bool = True, key_up: bool = True):
+        self.logger.debug(f"Typing {text}")
         if not self.bot._is_vnc_connected:
+            self.logger.warn("VNC is not connected")
             return
 
         # match backticks
@@ -82,13 +80,16 @@ class Keyboard(commands.Cog):
         if len(texts) > len(matches):
             await self.char_split_press(texts[-1], key_down, key_up)
 
+    @handle_exception()
     @app_commands.command(
         name="type",
         description="Types the text like you would type on your keyboard. Nothing special...",
     )
     @app_commands.describe(text="The text you want to type.")
     async def type_command(self, interaction: discord.Interaction, text: str):
+        self.logger.debug(f"Typing {text} requested")
         if not self.bot._is_vnc_connected:
+            self.logger.warn("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -101,10 +102,13 @@ class Keyboard(commands.Cog):
         name="key", description="Presses(or depresses) a key."
     )
 
+    @handle_exception()
     @key_group.command(name="down", description="Presses a key.")
     @app_commands.describe(key="The key you want to press.")
     async def key_down_command(self, interaction: discord.Interaction, key: str):
+        self.logger.debug(f"Pressing {key} requested")
         if not self.bot._is_vnc_connected:
+            self.logger.warn("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -113,10 +117,13 @@ class Keyboard(commands.Cog):
 
         await interaction.followup.send("Key has been pressed.")
 
+    @handle_exception()
     @key_group.command(name="up", description="Depresses a key.")
     @app_commands.describe(key="The key you want to depress.")
     async def key_up_command(self, interaction: discord.Interaction, key: str):
+        self.logger.debug(f"Depressing {key} requested")
         if not self.bot._is_vnc_connected:
+            self.logger.warn("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 

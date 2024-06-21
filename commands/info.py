@@ -1,25 +1,23 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from main import UpgradeMyWindowsBot
+from utils.cog_logger import CogLogger
+from utils.handle_exception import handle_exception
 
 
-class Info(commands.Cog):
-    def __init__(self, bot: "UpgradeMyWindowsBot"):
-        self.bot = bot
-
+class Info(CogLogger):
+    @handle_exception()
     @app_commands.command(name="info", description="Shows the current VM information.")
     async def info_command(self, interaction: discord.Interaction):
+        self.logger.debug("Info requested")
         info = await self.bot.get_current_info()
         if not info:
+            self.logger.warn("Failed to get VM info")
             await interaction.response.send_message("VM is not running.")
             return
 
         size = None
         if self.bot._is_vnc_connected and self.bot.vnc.screen:
+            self.logger.warn("Failed to get VM screen")
             size = self.bot.vnc.screen.size
         embed = discord.Embed(
             title="VM Information",

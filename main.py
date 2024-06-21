@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import discord
 import libvirt
 import os
@@ -7,10 +8,10 @@ from PIL import Image
 from discord.ext import commands
 from xml.dom import minidom
 from dotenv import load_dotenv
-
 from typing import Literal
 from typings.vminfo import VMInfo
 from utils.display_window import DisplayWindow
+from utils.logger import get_logger
 from utils.vnc_client import VNCClient
 
 COMMANDS = [
@@ -35,6 +36,7 @@ class UpgradeMyWindowsBot(commands.Bot):
     display_window: DisplayWindow
     vm_loop: asyncio.Task | None
     audio_buffer: bytes
+    logger: logging.Logger
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,6 +48,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.vm_loop = None
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
         self.audio_buffer = b""
+        self.logger = get_logger(self.__class__.__name__)
 
     @property
     def _is_virt_connected(self) -> bool:
@@ -60,32 +63,46 @@ class UpgradeMyWindowsBot(commands.Bot):
         return self.vnc.is_alive() and self.vnc.is_connected
 
     async def connect_qemu(self, reconnect=False):
+        self.logger.info("Connecting to QEMU")
         if self._is_virt_connected:
             if reconnect:
+                self.logger.debug("Disconnecting from QEMU for reconnection")
                 await self.disconnect_qemu()
             else:
+                self.logger.warn(
+                    "Already connected to QEMU, ignoring connection request"
+                )
                 return
         self.virt = libvirt.open()
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
+        self.logger.info("Connected to QEMU")
 
     async def vm_start_loop(self):
+        self.logger.info("VM start loop started")
         while self._is_virt_connected:
             await asyncio.sleep(1)
             if not self._is_vm_running:
                 await self.start_domain()
                 await self.connect_vnc(reconnect=True)
+        self.logger.info("VM start loop stopped")
 
     async def connect_vnc(self, reconnect=False):
+        self.logger.info("Connecting to VNC")
         if self._is_vnc_connected:
             if reconnect:
+                self.logger.debug("Disconnecting from VNC for reconnection")
                 await self.disconnect_vnc()
             else:
+                self.logger.warn(
+                    "Already connected to VNC, ignoring connection request"
+                )
                 return
         self.vnc = VNCClient()
         self.vnc.add_event_listener("screen_update", self._on_screen_update)
         self.vnc.add_event_listener("ready", self._on_vnc_ready)
         self.vnc.add_event_listener("audio_data", self._on_audio_data)
         self.vnc.start()
+        self.logger.info("Connected to VNC")
 
     async def _on_screen_update(self, image: Image.Image | None):
         if image:
@@ -93,6 +110,7 @@ class UpgradeMyWindowsBot(commands.Bot):
 
     async def _on_vnc_ready(self):
         if self._is_vnc_connected:
+            self.logger.info("VNC is ready")
             self.vnc.audioStreamBeginRequest()
 
     async def _on_audio_data(self, size: int, data: bytes):
@@ -104,25 +122,34 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.audio_buffer = b""
 
     async def disconnect_vnc(self):
+        self.logger.info("Disconnecting from VNC")
         if self._is_vnc_connected:
             self.vnc.disconnect()
+        self.logger.info("Disconnected from VNC")
 
     async def shutdown_domain(self):
+        self.logger.info("Shutting down VM")
         if self._is_vm_running:
             await self.disconnect_vnc()
             self.dom.shutdown()
+        self.logger.info("VM is shut down")
 
     async def start_domain(self):
+        self.logger.info("Starting VM")
         if not self._is_vm_running:
             self.dom.create()
             await self.connect_vnc(reconnect=True)
+        self.logger.info("VM is started")
 
     async def force_shutdown_domain(self):
+        self.logger.info("Force shutting down VM")
         if self._is_vm_running:
             await self.disconnect_vnc()
             self.dom.destroy()
+        self.logger.info("VM is force shut down")
 
     async def disconnect_qemu(self):
+        self.logger.info("Disconnecting from QEMU")
         if self._is_vnc_connected:
             await self.disconnect_vnc()
         if self.vm_loop:
@@ -130,18 +157,21 @@ class UpgradeMyWindowsBot(commands.Bot):
             self.vm_loop = None
         if self.virt:
             self.virt.close()
+        self.logger.info("Disconnected from QEMU")
 
     async def setup_hook(self):
+        self.logger.info("Doing initial setup")
         await self.connect_qemu()
         await self.start_domain()
         await self.connect_vnc()
 
     async def on_ready(self):
-        print(f"Logged on as {self.user}!")
+        self.logger.info(f"Logged on as {self.user}!")
         for command in COMMANDS:
             await self.load_extension(f"commands.{command}")
 
     async def close(self):
+        self.logger.info("Closing bot")
         if self._closed:
             return
         self.display_window.close()
@@ -150,16 +180,20 @@ class UpgradeMyWindowsBot(commands.Bot):
         await super().close()
 
     async def get_screen_img(self) -> Image.Image | None:
+        self.logger.debug("Getting screen image")
         if not self._is_vnc_connected:
+            self.logger.warn("VNC is not connected")
             return None
 
         return self.vnc.screen
 
     async def set_vcpus(self, vcpus: int):
+        self.logger.info(f"Setting vCPUs to {vcpus}")
         if self._is_virt_connected:
             self.dom.setVcpusFlags(vcpus, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
 
     async def set_memory(self, memory: int):
+        self.logger.info(f"Setting memory to {memory} KB")
         if self._is_virt_connected:
             self.dom.setMemoryFlags(
                 memory,
@@ -170,9 +204,11 @@ class UpgradeMyWindowsBot(commands.Bot):
     async def set_device(
         self, path: str | None = None, type: Literal["cdrom", "floppy"] = "cdrom"
     ):
+        self.logger.info(f"Setting {type} to {path}")
         if self._is_vm_running:
             info = await self.get_current_info()
             if not info:
+                self.logger.warn("Failed to get VM info")
                 return
             path = str(self.image_path / info["os"] / path) if path else None
             raw_xml = self.dom.XMLDesc()
@@ -194,6 +230,7 @@ class UpgradeMyWindowsBot(commands.Bot):
                     break
 
     async def set_os(self, os: str):
+        self.logger.info(f"Setting OS to {os}")
         if self._is_vm_running:
             raw_xml = self.dom.metadata(
                 libvirt.VIR_DOMAIN_METADATA_ELEMENT,
@@ -213,6 +250,7 @@ class UpgradeMyWindowsBot(commands.Bot):
             )
 
     async def get_current_info(self) -> VMInfo | None:
+        self.logger.debug("Getting current VM info")
         if self._is_vm_running:
             memsize = self.dom.maxMemory()
             vcpus = self.dom.vcpusFlags()
@@ -249,13 +287,15 @@ class UpgradeMyWindowsBot(commands.Bot):
                 if cdrom_path and floppy:
                     break
 
-            return {
+            info: VMInfo = {
                 "memory": memsize / 1024,
                 "cpu": vcpus,
                 "cdrom": cdrom_path,
                 "floppy": floppy,
                 "os": os,
             }
+            self.logger.debug(f"Current VM info: {info}")
+            return info
         else:
             return None
 

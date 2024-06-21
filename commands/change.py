@@ -1,21 +1,15 @@
 import discord
-from discord.ext import commands
-from discord import app_commands
-
-from typing import Literal, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from main import UpgradeMyWindowsBot
-
 from config import os_list
+from discord import app_commands
+from typing import Literal
+from utils.cog_logger import CogLogger
+from utils.handle_exception import handle_exception
 
 
-class Change(commands.Cog):
-    def __init__(self, bot: "UpgradeMyWindowsBot"):
-        self.bot = bot
-
+class Change(CogLogger):
     change_group = app_commands.Group(name="change", description="Change VM settings.")
 
+    @handle_exception()
     @change_group.command(
         name="os",
         description="Changes the vm preset and disk image selection to selected OS.",
@@ -37,12 +31,15 @@ class Change(commands.Cog):
         interaction: discord.Interaction,
         os: str,
     ):
+        self.logger.debug(f"Changing OS to {os} requested")
         if not self.bot._is_vm_running:
+            self.logger.warn("VM is not running")
             await interaction.response.send_message("VM is not running.")
             return
 
         os_preset = next((preset for preset in os_list if preset["os"] == os), None)
         if not os_preset:
+            self.logger.warn(f"OS {os} not found")
             await interaction.response.send_message("OS not found.")
             return
 
@@ -62,6 +59,7 @@ class Change(commands.Cog):
             "VM has been updated. Restart(or shut down) the VM to apply the cpu and memory changes."
         )
 
+    @handle_exception()
     @change_group.command(
         name="image",
         description="Changes the disc(or floppy disk) image to selected image.",
@@ -82,8 +80,10 @@ class Change(commands.Cog):
         type: Literal["cdrom", "floppy"],
         image: str,
     ):
+        self.logger.debug(f"Changing {type} image to {image} requested")
         info = await self.bot.get_current_info()
         if not self.bot._is_vm_running or not info:
+            self.logger.warn("VM is not running")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -91,12 +91,14 @@ class Change(commands.Cog):
             (preset for preset in os_list if preset["os"] == info["os"]), None
         )
         if not os_preset:
+            self.logger.error(f"OS {info['os']} not found which is impossible")
             await interaction.response.send_message(
                 "OS not found. Which is impossible. Please contact the developer."
             )
             return
 
         if not os_preset[type]:
+            self.logger.warn(f"{type} image not found for {info['os']}")
             await interaction.response.send_message(
                 f"{type} image for this OS not found."
             )
@@ -104,16 +106,19 @@ class Change(commands.Cog):
         try:
             index = os_preset[type].index(image)  # type: ignore
         except ValueError:
+            self.logger.warn(f"Image {image} not found")
             await interaction.response.send_message("Image not found.")
             return
         await self.bot.set_device(os_preset[type][index], type)  # type: ignore
 
         await interaction.response.send_message("Image has been updated.")
 
+    @handle_exception()
     @change_image_command.autocomplete("image")
     async def change_image_image_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
+        self.logger.debug(f"Autocompletion for image {current} requested")
         info = await self.bot.get_current_info()
         if not info:
             return []
@@ -132,11 +137,14 @@ class Change(commands.Cog):
         if not os_preset[type_]:
             return []
 
-        return [
+        choices = [
             app_commands.Choice(name=image, value=image)
             for image in os_preset[type_]
             if image.lower().startswith(current.lower())
         ][:25]
+
+        self.logger.debug(f"Provided {len(choices)} choices")
+        return choices
 
 
 async def setup(bot):

@@ -1,16 +1,11 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from main import UpgradeMyWindowsBot
+from utils.cog_logger import CogLogger
+from utils.handle_exception import handle_exception
 
 
-class Help(commands.Cog):
-    def __init__(self, bot: "UpgradeMyWindowsBot"):
-        self.bot = bot
-
+class Help(CogLogger):
+    @handle_exception()
     @app_commands.command(name="help", description="Shows the help message.")
     async def help_command(self, interaction: discord.Interaction):
         embed = discord.Embed(

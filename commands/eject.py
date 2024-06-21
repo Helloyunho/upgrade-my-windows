@@ -1,17 +1,12 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
-
-from typing import Literal, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from main import UpgradeMyWindowsBot
+from typing import Literal
+from utils.cog_logger import CogLogger
+from utils.handle_exception import handle_exception
 
 
-class Eject(commands.Cog):
-    def __init__(self, bot: "UpgradeMyWindowsBot"):
-        self.bot = bot
-
+class Eject(CogLogger):
+    @handle_exception()
     @app_commands.command(
         name="eject", description="Ejects the disc(or floppy disk, or both)."
     )
@@ -26,7 +21,9 @@ class Eject(commands.Cog):
     async def eject_command(
         self, interaction: discord.Interaction, type: Literal["cdrom", "floppy", "both"]
     ):
+        self.logger.debug(f"Ejecting {type} requested")
         if not self.bot._is_vm_running:
+            self.logger.warn("VM is not running")
             await interaction.response.send_message("VM is not running.")
             return
 
