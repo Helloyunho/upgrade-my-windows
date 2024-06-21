@@ -124,6 +124,9 @@ class UpgradeMyWindowsBot(commands.Bot):
     async def disconnect_vnc(self):
         self.logger.info("Disconnecting from VNC")
         if self._is_vnc_connected:
+            self.vnc.remove_event_listener("screen_update")
+            self.vnc.remove_event_listener("ready")
+            self.vnc.remove_event_listener("audio_data")
             self.vnc.disconnect()
         self.logger.info("Disconnected from VNC")
 
@@ -163,7 +166,6 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.logger.info("Doing initial setup")
         await self.connect_qemu()
         await self.start_domain()
-        await self.connect_vnc()
 
     async def on_ready(self):
         self.logger.info(f"Logged on as {self.user}!")
