@@ -27,7 +27,6 @@ class DisplayWindow(threading.Thread):
             self.screen.fill((0, 0, 0))
 
         self.screen.blit(pygame_image, (0, 0))
-        pygame.display.flip()
 
     def update_audio(self, data: bytes):
         pygame.mixer.Sound(buffer=data).play()
