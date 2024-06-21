@@ -1,5 +1,4 @@
 import pygame
-import asyncio
 import threading
 from PIL import Image, ImageOps
 from utils.logger import get_logger
@@ -10,8 +9,6 @@ class DisplayWindow(threading.Thread):
         super().__init__(daemon=True)
         pygame.mixer.pre_init(44100, -16, 2, buffer=512)
         self.screen = None
-        pygame.init()
-        pygame.display.set_caption("Upgrade My Windows")
         self.running = True
         self.logger = get_logger(self.__class__.__name__)
 
@@ -20,7 +17,7 @@ class DisplayWindow(threading.Thread):
 
     def update_frame(self, image: Image.Image):
         if not self.screen:
-            self.screen = pygame.display.set_mode((1600, 900))
+            return
         self.screen.fill((0, 0, 0))
         _image = ImageOps.contain(image, (1600, 900), Image.Resampling.LANCZOS)
         mode = _image.mode
@@ -33,13 +30,16 @@ class DisplayWindow(threading.Thread):
         x = (1600 - image_width) // 2
         y = (900 - image_height) // 2
         self.screen.blit(pygame_image, (x, y))
-        pygame.display.flip()
 
     def update_audio(self, data: bytes):
         pygame.mixer.Sound(buffer=data).play()
 
     def run(self):
+        pygame.init()
+        pygame.display.set_caption("Upgrade My Windows")
+        self.screen = pygame.display.set_mode((1600, 900))
         while self.running:
             pygame.event.pump()
+            pygame.display.flip()
 
         pygame.quit()
