@@ -69,7 +69,7 @@ class UpgradeMyWindowsBot(commands.Bot):
                 self.logger.debug("Disconnecting from QEMU for reconnection")
                 await self.disconnect_qemu()
             else:
-                self.logger.warn(
+                self.logger.warning(
                     "Already connected to QEMU, ignoring connection request"
                 )
                 return
@@ -93,7 +93,7 @@ class UpgradeMyWindowsBot(commands.Bot):
                 self.logger.debug("Disconnecting from VNC for reconnection")
                 await self.disconnect_vnc()
             else:
-                self.logger.warn(
+                self.logger.warning(
                     "Already connected to VNC, ignoring connection request"
                 )
                 return
@@ -182,7 +182,7 @@ class UpgradeMyWindowsBot(commands.Bot):
     async def get_screen_img(self) -> Image.Image | None:
         self.logger.debug("Getting screen image")
         if not self._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             return None
 
         return self.vnc.screen
@@ -208,7 +208,7 @@ class UpgradeMyWindowsBot(commands.Bot):
         if self._is_vm_running:
             info = await self.get_current_info()
             if not info:
-                self.logger.warn("Failed to get VM info")
+                self.logger.warning("Failed to get VM info")
                 return
             path = str(self.image_path / info["os"] / path) if path else None
             raw_xml = self.dom.XMLDesc()

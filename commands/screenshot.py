@@ -15,7 +15,7 @@ class Screenshot(CogLogger):
         self.logger.debug("Screenshot requested")
         img = await self.bot.get_screen_img()
         if not img:
-            self.logger.warn("Failed to get VM screen")
+            self.logger.warning("Failed to get VM screen")
             await interaction.response.send_message("VM is not running.")
             return
 

@@ -23,7 +23,7 @@ class Eject(CogLogger):
     ):
         self.logger.debug(f"Ejecting {type} requested")
         if not self.bot._is_vm_running:
-            self.logger.warn("VM is not running")
+            self.logger.warning("VM is not running")
             await interaction.response.send_message("VM is not running.")
             return
 

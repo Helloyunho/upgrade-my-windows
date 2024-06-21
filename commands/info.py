@@ -11,13 +11,13 @@ class Info(CogLogger):
         self.logger.debug("Info requested")
         info = await self.bot.get_current_info()
         if not info:
-            self.logger.warn("Failed to get VM info")
+            self.logger.warning("Failed to get VM info")
             await interaction.response.send_message("VM is not running.")
             return
 
         size = None
         if self.bot._is_vnc_connected and self.bot.vnc.screen:
-            self.logger.warn("Failed to get VM screen")
+            self.logger.warning("Failed to get VM screen")
             size = self.bot.vnc.screen.size
         embed = discord.Embed(
             title="VM Information",

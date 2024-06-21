@@ -42,7 +42,7 @@ class Mouse(CogLogger):
     ):
         self.logger.debug(f"Moving the mouse to {x}, {y} requested")
         if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
-            self.logger.warn("VNC is not connected or screen is not available")
+            self.logger.warning("VNC is not connected or screen is not available")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -73,7 +73,7 @@ class Mouse(CogLogger):
     async def move_center_command(self, interaction: discord.Interaction):
         self.logger.debug("Moving mouse to center requested")
         if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
-            self.logger.warn("VNC is not connected or screen is not available")
+            self.logger.warning("VNC is not connected or screen is not available")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -93,7 +93,7 @@ class Mouse(CogLogger):
     async def reset_cursor_command(self, interaction: discord.Interaction):
         self.logger.debug("Resetting the mouse cursor requested")
         if not self.bot._is_vnc_connected or not self.bot.vnc.screen:
-            self.logger.warn("VNC is not connected or screen is not available")
+            self.logger.warning("VNC is not connected or screen is not available")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -119,7 +119,7 @@ class Mouse(CogLogger):
     ):
         self.logger.debug(f"Clicking the {button} button requested")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -154,7 +154,7 @@ class Mouse(CogLogger):
     ):
         self.logger.debug(f"Scrolling the mouse {direction} requested")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -189,7 +189,7 @@ class Mouse(CogLogger):
     ):
         self.logger.debug(f"Pressing the {button} button requested")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -219,7 +219,7 @@ class Mouse(CogLogger):
     ):
         self.logger.debug(f"Depressing the {button} button requested")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 

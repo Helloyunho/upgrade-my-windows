@@ -33,13 +33,13 @@ class Change(CogLogger):
     ):
         self.logger.debug(f"Changing OS to {os} requested")
         if not self.bot._is_vm_running:
-            self.logger.warn("VM is not running")
+            self.logger.warning("VM is not running")
             await interaction.response.send_message("VM is not running.")
             return
 
         os_preset = next((preset for preset in os_list if preset["os"] == os), None)
         if not os_preset:
-            self.logger.warn(f"OS {os} not found")
+            self.logger.warning(f"OS {os} not found")
             await interaction.response.send_message("OS not found.")
             return
 
@@ -83,7 +83,7 @@ class Change(CogLogger):
         self.logger.debug(f"Changing {type} image to {image} requested")
         info = await self.bot.get_current_info()
         if not self.bot._is_vm_running or not info:
-            self.logger.warn("VM is not running")
+            self.logger.warning("VM is not running")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -98,7 +98,7 @@ class Change(CogLogger):
             return
 
         if not os_preset[type]:
-            self.logger.warn(f"{type} image not found for {info['os']}")
+            self.logger.warning(f"{type} image not found for {info['os']}")
             await interaction.response.send_message(
                 f"{type} image for this OS not found."
             )
@@ -106,7 +106,7 @@ class Change(CogLogger):
         try:
             index = os_preset[type].index(image)  # type: ignore
         except ValueError:
-            self.logger.warn(f"Image {image} not found")
+            self.logger.warning(f"Image {image} not found")
             await interaction.response.send_message("Image not found.")
             return
         await self.bot.set_device(os_preset[type][index], type)  # type: ignore

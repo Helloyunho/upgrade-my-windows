@@ -46,7 +46,7 @@ class Keyboard(CogLogger):
     async def key_press(self, text: str, key_down: bool = True, key_up: bool = True):
         self.logger.debug(f"Typing {text}")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             return
 
         # match backticks
@@ -89,7 +89,7 @@ class Keyboard(CogLogger):
     async def type_command(self, interaction: discord.Interaction, text: str):
         self.logger.debug(f"Typing {text} requested")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -108,7 +108,7 @@ class Keyboard(CogLogger):
     async def key_down_command(self, interaction: discord.Interaction, key: str):
         self.logger.debug(f"Pressing {key} requested")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
@@ -123,7 +123,7 @@ class Keyboard(CogLogger):
     async def key_up_command(self, interaction: discord.Interaction, key: str):
         self.logger.debug(f"Depressing {key} requested")
         if not self.bot._is_vnc_connected:
-            self.logger.warn("VNC is not connected")
+            self.logger.warning("VNC is not connected")
             await interaction.response.send_message("VM is not running.")
             return
 
