@@ -97,7 +97,7 @@ class Change(CogLogger):
             )
             return
 
-        if not os_preset[type]:
+        if not os_preset[type] and not (type == "cdrom" and image == "half-life.iso"):
             self.logger.warning(f"{type} image not found for {info['os']}")
             await interaction.response.send_message(
                 f"{type} image for this OS not found."
@@ -105,11 +105,14 @@ class Change(CogLogger):
             return
         try:
             index = os_preset[type].index(image)  # type: ignore
+            await self.bot.set_device(os_preset[type][index], type)  # type: ignore
         except ValueError:
-            self.logger.warning(f"Image {image} not found")
-            await interaction.response.send_message("Image not found.")
-            return
-        await self.bot.set_device(os_preset[type][index], type)  # type: ignore
+            if type == "cdrom" and image == "half-life.iso":
+                await self.bot.set_device(image, type)
+            else:
+                self.logger.warning(f"Image {image} not found")
+                await interaction.response.send_message("Image not found.")
+                return
 
         await interaction.response.send_message("Image has been updated.")
 
@@ -133,6 +136,12 @@ class Change(CogLogger):
         if not type_:
             return []
         type_: str = type_["value"]  # type: ignore
+
+        if type_ == "cdrom":
+            if not os_preset[type_]:
+                os_preset[type_] = ["half-life.iso"]
+            else:
+                os_preset[type_] = ["half-life.iso"] + os_preset[type_]  # type: ignore
 
         if not os_preset[type_]:
             return []

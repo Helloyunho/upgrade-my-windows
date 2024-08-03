@@ -213,7 +213,13 @@ class UpgradeMyWindowsBot(commands.Bot):
             if not info:
                 self.logger.warning("Failed to get VM info")
                 return
-            path = str(self.image_path / info["os"] / path) if path else None
+            if path:
+                if path == "half-life.iso":
+                    path = str(self.image_path / path)
+                else:
+                    path = str(self.image_path / info["os"] / path)
+            else:
+                path = None
             raw_xml = self.dom.XMLDesc()
             xml = minidom.parseString(raw_xml)
             disks = xml.getElementsByTagName("disk")
