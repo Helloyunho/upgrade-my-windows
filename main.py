@@ -67,9 +67,9 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
         self._callback = self.on_message
 
     async def get_live_chat_id(self, video_id: str):
-        async with Aiogoogle(api_key=os.getenv("GOOGLE_API_KEY") or "") as aiogoogle:  # type: ignore
+        async with Aiogoogle(user_creds=user_creds) as aiogoogle:  # type: ignore
             youtube = await aiogoogle.discover("youtube", "v3")
-            stream_info = await aiogoogle.as_api_key(
+            stream_info = await aiogoogle.as_user(
                 youtube.liveBroadcasts.list(
                     part="snippet",  # type: ignore
                     id=video_id,  # type: ignore
