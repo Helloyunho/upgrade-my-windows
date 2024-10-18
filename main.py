@@ -1,11 +1,11 @@
 import asyncio
 import logging
-import discord
 import libvirt
 import os
+import json
 from pathlib import Path
 from PIL import Image
-from discord.ext import commands
+import pytchat
 from xml.dom import minidom
 from dotenv import load_dotenv
 from typing import Literal
@@ -13,8 +13,11 @@ from typings.vminfo import VMInfo
 from utils.display_window import DisplayWindow
 from utils.logger import get_logger
 from utils.vnc_client import VNCClient
+from utils.command_register import COMMANDS
+from importlib import import_module
+from aiogoogle import Aiogoogle
 
-COMMANDS = [
+COMMAND_FILES = [
     "admin",
     "change",
     "mouse",
@@ -22,13 +25,15 @@ COMMANDS = [
     "help",
     "info",
     "keyboard",
-    "screenshot",
 ]
 
 load_dotenv()
 
+with open("user_creds.json") as f:
+    user_creds = json.load(f)
 
-class UpgradeMyWindowsBot(commands.Bot):
+
+class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
     virt: libvirt.virConnect
     dom: libvirt.virDomain
     vnc: VNCClient
@@ -37,9 +42,9 @@ class UpgradeMyWindowsBot(commands.Bot):
     vm_loop: asyncio.Task | None
     audio_buffer: bytes
     logger: logging.Logger
+    liveChatID: str
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, video_id, *args, **kwargs):
         self.display_window = DisplayWindow()
         self.display_window.start()
         self.virt = libvirt.open()
@@ -49,6 +54,27 @@ class UpgradeMyWindowsBot(commands.Bot):
         self.image_path = Path(os.getenv("IMAGE_PATH") or "./images")
         self.audio_buffer = b""
         self.logger = get_logger(self.__class__.__name__)
+        for file in COMMAND_FILES:
+            try:
+                import_module(f"commands.{file}")
+            except ImportError as e:
+                self.logger.error(f"Failed to import command module {file}: {e}")
+
+        asyncio.run(self.get_live_chat_id())
+
+        super().__init__(video_id, *args, **kwargs)
+        self._callback = self.on_message
+
+    async def get_live_chat_id(self):
+        async with Aiogoogle(api_key=os.getenv("GOOGLE_API_KEY") or "") as aiogoogle:  # type: ignore
+            youtube = await aiogoogle.discover("youtube", "v3")
+            stream_info = await aiogoogle.as_api_key(
+                youtube.liveBroadcasts.list(
+                    part="snippet",  # type: ignore
+                    id=self.video_id,  # type: ignore
+                )
+            )
+            self.liveChatID = stream_info["items"][0]["snippet"]["liveChatId"]
 
     @property
     def _is_virt_connected(self) -> bool:
@@ -168,19 +194,11 @@ class UpgradeMyWindowsBot(commands.Bot):
         await self.start_domain()
         await self.connect_vnc()
 
-    async def on_ready(self):
-        self.logger.info(f"Logged on as {self.user}!")
-        for command in COMMANDS:
-            await self.load_extension(f"commands.{command}")
-
-    async def close(self):
-        self.logger.info("Closing bot")
-        if self._closed:
-            return
+    def terminate(self):
         self.display_window.close()
         self.display_window.join()
-        await self.disconnect_qemu()
-        await super().close()
+        asyncio.run(self.disconnect_qemu())
+        super().terminate()
 
     async def get_screen_img(self) -> Image.Image | None:
         self.logger.debug("Getting screen image")
@@ -308,9 +326,31 @@ class UpgradeMyWindowsBot(commands.Bot):
         else:
             return None
 
+    async def send_message(self, message: str):
+        async with Aiogoogle(user_creds=user_creds) as aiogoogle:
+            youtube = await aiogoogle.discover("youtube", "v3")
+            await aiogoogle.as_user(
+                youtube.liveChatMessages.insert(
+                    part="snippet",  # type: ignore
+                    snippet={  # type: ignore
+                        "liveChatId": self.liveChatID,
+                        "type": "textMessageEvent",
+                        "textMessageDetails": {"messageText": message},
+                    },
+                )
+            )
 
-intents = discord.Intents.default()
-client = UpgradeMyWindowsBot("aaaaaaaaaaaaaaaaa", intents=intents)
+    async def on_message(self, chats):
+        for chat in chats.items():
+            if chat.message.startswith("!!"):
+                command = chat.message[2:].split(" ")[0]
+                args = chat.message[2:].split(" ")[1:]
+                if command in COMMANDS:
+                    self.logger.debug(f"Command received: {command}")
+                    command_func = COMMANDS[command]
+                    await command_func(self, args)
 
 
-client.run(os.getenv("DISCORD_TOKEN"))  # type: ignore
+client = UpgradeMyWindowsBot(
+    input("Enter the video(live) id: "),
+)

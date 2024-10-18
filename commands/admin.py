@@ -1,36 +1,14 @@
-import discord
-from discord import app_commands
-from utils.cog_logger import CogLogger
 from utils.handle_exception import handle_exception
-from utils.is_me import is_me
+from utils.command_register import command_register
+from utils.logger import get_logger
+
+logger = get_logger("Admin")
 
 
-class Admin(CogLogger):
-    @app_commands.command(
-        name="sync",
-        description="Syncs the bot's commands with Discord.",
-    )
-    @is_me()
-    @handle_exception()
-    async def sync_command(self, interaction: discord.Interaction):
-        self.logger.debug("Command sync requested")
-        await self.bot.tree.sync()
-        if interaction.guild_id:
-            self.bot.tree.copy_global_to(guild=discord.Object(id=interaction.guild_id))
-        await interaction.response.send_message("Commands synced.")
-
-    @app_commands.command(
-        name="reboot",
-        description="Reboots the VM.",
-    )
-    @handle_exception()
-    async def reboot_command(self, interaction: discord.Interaction):
-        self.logger.debug("VM reboot requested")
-        await interaction.response.defer()
-        await self.bot.force_shutdown_domain()
-        await self.bot.start_domain()
-        await interaction.followup.send("Rebooted the VM.")
-
-
-async def setup(bot):
-    await bot.add_cog(Admin(bot))
+@command_register(name="reboot")
+@handle_exception(logger=logger)
+async def reboot_command(bot, _):
+    logger.debug("VM reboot requested")
+    await bot.force_shutdown_domain()
+    await bot.start_domain()
+    await bot.send_message("VM has been rebooted.")

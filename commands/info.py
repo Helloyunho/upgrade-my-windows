@@ -1,45 +1,32 @@
-import discord
-from discord import app_commands
-from utils.cog_logger import CogLogger
 from utils.handle_exception import handle_exception
+from utils.command_register import command_register
+from utils.logger import get_logger
+
+logger = get_logger("Info")
 
 
-class Info(CogLogger):
-    @app_commands.command(name="info", description="Shows the current VM information.")
-    @handle_exception()
-    async def info_command(self, interaction: discord.Interaction):
-        self.logger.debug("Info requested")
-        info = await self.bot.get_current_info()
-        if not info:
-            self.logger.warning("Failed to get VM info")
-            await interaction.response.send_message("VM is not running.")
-            return
+@command_register(name="info")
+@handle_exception(logger=logger)
+async def info_command(bot, _):
+    logger.debug("Info requested")
+    info = await bot.get_current_info()
+    if not info:
+        logger.warning("Failed to get VM info")
+        await bot.send_message("VM is not running.")
+        return
 
-        size = None
-        if self.bot._is_vnc_connected and self.bot.vnc.screen:
-            self.logger.warning("Failed to get VM screen")
-            size = self.bot.vnc.screen.size
-        embed = discord.Embed(
-            title="VM Information",
-            description="Information about the current VM.",
-            color=0x447DD2,
-        )
-        embed.add_field(name="Memory", value=f"{info['memory']} MB", inline=True)
-        embed.add_field(name="CPU", value=f"{info['cpu']} cores", inline=True)
-        embed.add_field(
-            name="Resolution",
-            value=f"{size[0]}x{size[1]}" if size is not None else "Unavailable",
-            inline=True,
-        )
-        embed.add_field(name="CD-ROM", value=info["cdrom"] or "None", inline=True)
-        embed.add_field(name="Floppy", value=info["floppy"] or "None", inline=True)
-        embed.add_field(
-            name="OS",
-            value=f"Windows {info['os'].title() if info['os'] == 'vista' else info['os'].upper()}",
-            inline=True,
-        )
-        await interaction.response.send_message(embed=embed)
-
-
-async def setup(bot):
-    await bot.add_cog(Info(bot))
+    size = None
+    if bot._is_vnc_connected and bot.vnc.screen:
+        size = bot.vnc.screen.size
+    else:
+        logger.warning("Failed to get VM screen")
+    await bot.send_message(
+        f"Memory: {info['memory']} MB\n"
+        f"CPU: {info['cpu']} cores\n"
+        f"Resolution: {size[0]}x{size[1]}\n"
+        if size is not None
+        else "Unavailable"
+        f"CD-ROM: {info['cdrom'] or 'None'}\n"
+        f"Floppy: {info['floppy'] or 'None'}\n"
+        f"OS: {info['os']}"
+    )
