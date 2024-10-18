@@ -61,6 +61,7 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
                 self.logger.error(f"Failed to import command module {file}: {e}")
 
         asyncio.run(self.get_live_chat_id())
+        asyncio.run(self.setup_hook())
 
         super().__init__(video_id, *args, **kwargs)
         self._callback = self.on_message
