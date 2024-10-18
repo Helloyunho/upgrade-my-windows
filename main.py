@@ -72,7 +72,7 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
             stream_info = await aiogoogle.as_api_key(
                 youtube.liveBroadcasts.list(
                     part="snippet",  # type: ignore
-                    id=self.video_id,  # type: ignore
+                    id=self._video_id,  # type: ignore
                 )
             )
             self.liveChatID = stream_info["items"][0]["snippet"]["liveChatId"]
