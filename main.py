@@ -60,19 +60,19 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
             except ImportError as e:
                 self.logger.error(f"Failed to import command module {file}: {e}")
 
-        asyncio.run(self.get_live_chat_id())
+        asyncio.run(self.get_live_chat_id(video_id))
         asyncio.run(self.setup_hook())
 
         super().__init__(video_id, *args, **kwargs)
         self._callback = self.on_message
 
-    async def get_live_chat_id(self):
+    async def get_live_chat_id(self, video_id: str):
         async with Aiogoogle(api_key=os.getenv("GOOGLE_API_KEY") or "") as aiogoogle:  # type: ignore
             youtube = await aiogoogle.discover("youtube", "v3")
             stream_info = await aiogoogle.as_api_key(
                 youtube.liveBroadcasts.list(
                     part="snippet",  # type: ignore
-                    id=self._video_id,  # type: ignore
+                    id=video_id,  # type: ignore
                 )
             )
             self.liveChatID = stream_info["items"][0]["snippet"]["liveChatId"]
