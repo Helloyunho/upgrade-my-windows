@@ -3,9 +3,11 @@ import logging
 import libvirt
 import os
 import json
+import grpc
+import stream_list_pb2
+import stream_list_pb2_grpc
 from pathlib import Path
 from PIL import Image
-import pytchat
 from xml.dom import minidom
 from dotenv import load_dotenv
 from typing import Literal
@@ -32,8 +34,11 @@ load_dotenv()
 with open("user_creds.json") as f:
     user_creds = json.load(f)
 
+with open("client_creds.json") as f:
+    client_creds = json.load(f)
 
-class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
+
+class UpgradeMyWindowsBot:
     virt: libvirt.virConnect
     dom: libvirt.virDomain
     vnc: VNCClient
@@ -62,12 +67,10 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
 
         asyncio.run(self.get_live_chat_id(video_id))
         asyncio.run(self.setup_hook())
-
-        super().__init__(video_id, *args, **kwargs)
-        self._callback = self.on_message
+        asyncio.run(self.get_message())
 
     async def get_live_chat_id(self, video_id: str):
-        async with Aiogoogle(user_creds=user_creds) as aiogoogle:  # type: ignore
+        async with Aiogoogle(user_creds=user_creds, client_creds=client_creds) as aiogoogle:  # type: ignore
             youtube = await aiogoogle.discover("youtube", "v3")
             stream_info = await aiogoogle.as_user(
                 youtube.liveBroadcasts.list(
@@ -199,7 +202,6 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
         self.display_window.close()
         self.display_window.join()
         asyncio.run(self.disconnect_qemu())
-        super().terminate()
 
     async def get_screen_img(self) -> Image.Image | None:
         self.logger.debug("Getting screen image")
@@ -328,7 +330,9 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
             return None
 
     async def send_message(self, message: str):
-        async with Aiogoogle(user_creds=user_creds) as aiogoogle:
+        async with Aiogoogle(
+            user_creds=user_creds, client_creds=client_creds
+        ) as aiogoogle:
             youtube = await aiogoogle.discover("youtube", "v3")
             await aiogoogle.as_user(
                 youtube.liveChatMessages.insert(
@@ -341,15 +345,32 @@ class UpgradeMyWindowsBot(pytchat.LiveChatAsync):
                 )
             )
 
-    async def on_message(self, chats):
-        for chat in chats.items():
-            if chat.message.startswith("!!"):
-                command = chat.message[2:].split(" ")[0]
-                args = chat.message[2:].split(" ")[1:]
-                if command in COMMANDS:
-                    self.logger.debug(f"Command received: {command}")
-                    command_func = COMMANDS[command]
-                    await command_func(self, args)
+    async def get_message(self):
+        creds = grpc.ssl_channel_credentials()
+        async with grpc.aio.secure_channel(
+            "dns:///youtube.googleapis.com:443", creds
+        ) as channel:
+            stub = stream_list_pb2_grpc.V3DataLiveChatMessageServiceStub(channel)
+            metadata = (("x-goog-api-key", os.getenv("GOOGLE_API_KEY")))
+            next_page_token = None
+            while True:
+                request = stream_list_pb2.LiveChatMessageListRequest( # type: ignore
+                    part=["snippet"],
+                    live_chat_id=self.liveChatID,
+                    page_token=next_page_token,
+                )
+                for response in stub.StreamList(request, metadata=metadata): # type: ignore
+                    for chat in response.items:
+                        if chat.snippet.type == "textMessageEvent":
+                            message = chat.snippet.textMessageDetails.messageText
+                            if message.startswith("!!"):
+                                command = message[2:].split(" ")[0]
+                                args = message[2:].split(" ")[1:]
+                                if command in COMMANDS:
+                                    self.logger.debug(f"Command received: {command}")
+                                    command_func = COMMANDS[command]
+                                    await command_func(self, args)
+                    next_page_token = response.nextPageToken
 
 
 client = UpgradeMyWindowsBot(
