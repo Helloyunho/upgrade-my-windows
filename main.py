@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 import libvirt
 import os
@@ -48,11 +49,13 @@ class UpgradeMyWindowsBot:
     audio_buffer: bytes
     logger: logging.Logger
     liveChatID: str
+    started_at: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
+    live_channel_id: str = os.getenv("YOUTUBE_CHANNEL_ID") or ""
 
     def __init__(self, video_id, *args, **kwargs):
         self.display_window = DisplayWindow()
         self.display_window.start()
-        self.virt = libvirt.open()
+        self.virt = libvirt.open("qemu:///system")
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
         self.vnc = VNCClient()  # dummy
         self.vm_loop = None
@@ -103,7 +106,7 @@ class UpgradeMyWindowsBot:
                     "Already connected to QEMU, ignoring connection request"
                 )
                 return
-        self.virt = libvirt.open()
+        self.virt = libvirt.open("qemu:///system")
         self.dom = self.virt.lookupByUUIDString(os.getenv("VIRT_DOMAIN_UUID"))
         self.logger.info("Connected to QEMU")
 
@@ -337,11 +340,13 @@ class UpgradeMyWindowsBot:
             await aiogoogle.as_user(
                 youtube.liveChatMessages.insert(
                     part="snippet",  # type: ignore
-                    snippet={  # type: ignore
-                        "liveChatId": self.liveChatID,
-                        "type": "textMessageEvent",
-                        "textMessageDetails": {"messageText": message},
-                    },
+                    json={  # type: ignore
+                        "snippet": {
+                            "liveChatId": self.liveChatID,
+                            "type": "textMessageEvent",
+                            "textMessageDetails": {"messageText": message},
+                        },
+                    }
                 )
             )
 
@@ -351,7 +356,7 @@ class UpgradeMyWindowsBot:
             "dns:///youtube.googleapis.com:443", creds
         ) as channel:
             stub = stream_list_pb2_grpc.V3DataLiveChatMessageServiceStub(channel)
-            metadata = (("x-goog-api-key", os.getenv("GOOGLE_API_KEY")))
+            metadata = (("x-goog-api-key", os.getenv("GOOGLE_API_KEY")),)
             next_page_token = None
             while True:
                 request = stream_list_pb2.LiveChatMessageListRequest( # type: ignore
@@ -359,18 +364,22 @@ class UpgradeMyWindowsBot:
                     live_chat_id=self.liveChatID,
                     page_token=next_page_token,
                 )
-                for response in stub.StreamList(request, metadata=metadata): # type: ignore
+                async for response in stub.StreamList(request, metadata=metadata):  # type: ignore
                     for chat in response.items:
-                        if chat.snippet.type == "textMessageEvent":
-                            message = chat.snippet.textMessageDetails.messageText
-                            if message.startswith("!!"):
-                                command = message[2:].split(" ")[0]
-                                args = message[2:].split(" ")[1:]
-                                if command in COMMANDS:
-                                    self.logger.debug(f"Command received: {command}")
-                                    command_func = COMMANDS[command]
-                                    await command_func(self, args)
-                    next_page_token = response.nextPageToken
+                        if chat.snippet.type == 1 and chat.snippet.author_channel_id != self.live_channel_id:  # textMessageEvent
+                            published_at = datetime.datetime.fromisoformat(
+                                chat.snippet.published_at.replace("Z", "+00:00")
+                            )
+                            if published_at > self.started_at:
+                                message = chat.snippet.text_message_details.message_text
+                                if message.startswith("!!"):
+                                    command = message[2:].split(" ")[0]
+                                    args = message[2:].split(" ")[1:]
+                                    if command in COMMANDS:
+                                        self.logger.debug(f"Command received: {command}")
+                                        command_func = COMMANDS[command]
+                                        await command_func(self, args)
+                    next_page_token = response.next_page_token
 
 
 client = UpgradeMyWindowsBot(

@@ -1,5 +1,3 @@
-from discord import app_commands
-from utils.cog_logger import CogLogger
 from utils.handle_exception import handle_exception
 from utils.command_register import command_register
 from utils.logger import get_logger
