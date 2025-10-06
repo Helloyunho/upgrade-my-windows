@@ -51,6 +51,7 @@ class UpgradeMyWindowsBot:
     liveChatID: str
     started_at: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
     live_channel_id: str = os.getenv("YOUTUBE_CHANNEL_ID") or ""
+    block_chat: bool = False
 
     def __init__(self, video_id, *args, **kwargs):
         self.display_window = DisplayWindow()
@@ -76,12 +77,14 @@ class UpgradeMyWindowsBot:
         async with Aiogoogle(user_creds=user_creds, client_creds=client_creds) as aiogoogle:  # type: ignore
             youtube = await aiogoogle.discover("youtube", "v3")
             stream_info = await aiogoogle.as_user(
-                youtube.liveBroadcasts.list(
-                    part="snippet",  # type: ignore
+                youtube.videos.list(
+                    part="liveStreamingDetails",  # type: ignore
                     id=video_id,  # type: ignore
                 )
             )
-            self.liveChatID = stream_info["items"][0]["snippet"]["liveChatId"]
+            self.liveChatID = stream_info["items"][0]["liveStreamingDetails"][
+                "activeLiveChatId"
+            ]
 
     @property
     def _is_virt_connected(self) -> bool:
@@ -238,7 +241,7 @@ class UpgradeMyWindowsBot:
                 self.logger.warning("Failed to get VM info")
                 return
             if path:
-                if path == "half-life.iso":
+                if path == "half-life.iso" or path == "gparted.iso":
                     path = str(self.image_path / path)
                 else:
                     path = str(self.image_path / info["os"] / path)
@@ -346,9 +349,16 @@ class UpgradeMyWindowsBot:
                             "type": "textMessageEvent",
                             "textMessageDetails": {"messageText": message},
                         },
-                    }
+                    },
                 )
             )
+
+    async def input_through_console(self):
+        command = input("Enter command: ")
+        command = command.split(" ")
+        if command[0] in COMMANDS:
+            command_func = COMMANDS[command[0]]["func"]
+            await command_func(self, command[1:])
 
     async def get_message(self):
         creds = grpc.ssl_channel_credentials()
@@ -359,14 +369,20 @@ class UpgradeMyWindowsBot:
             metadata = (("x-goog-api-key", os.getenv("GOOGLE_API_KEY")),)
             next_page_token = None
             while True:
-                request = stream_list_pb2.LiveChatMessageListRequest( # type: ignore
-                    part=["snippet"],
+                if self.block_chat:
+                    return
+                request = stream_list_pb2.LiveChatMessageListRequest(  # type: ignore
+                    part=["snippet", "authorDetails"],
                     live_chat_id=self.liveChatID,
+                    max_results=5,
                     page_token=next_page_token,
                 )
                 async for response in stub.StreamList(request, metadata=metadata):  # type: ignore
                     for chat in response.items:
-                        if chat.snippet.type == 1 and chat.snippet.author_channel_id != self.live_channel_id:  # textMessageEvent
+                        if (
+                            chat.snippet.type == 1
+                            and chat.snippet.author_channel_id != self.live_channel_id
+                        ):  # textMessageEvent
                             published_at = datetime.datetime.fromisoformat(
                                 chat.snippet.published_at.replace("Z", "+00:00")
                             )
@@ -376,9 +392,81 @@ class UpgradeMyWindowsBot:
                                     command = message[2:].split(" ")[0]
                                     args = message[2:].split(" ")[1:]
                                     if command in COMMANDS:
-                                        self.logger.debug(f"Command received: {command}")
-                                        command_func = COMMANDS[command]
-                                        await command_func(self, args)
+                                        self.logger.info(
+                                            f"User {chat.author_details.display_name} issued command {command} {' '.join(args)}"
+                                        )
+                                        command_props = COMMANDS[command]
+                                        command_func = command_props["func"]
+                                        if command_props["owner_only"]:
+                                            if chat.author_details.is_chat_owner:
+                                                await command_func(self, args)
+                                            else:
+                                                self.logger.warning(
+                                                    f"User {chat.author_details.display_name} tried to use owner only command {command}"
+                                                )
+                                        elif command_props["mods_only"]:
+                                            if (
+                                                chat.author_details.is_chat_moderator
+                                                or chat.author_details.is_chat_owner
+                                            ):
+                                                await command_func(self, args)
+                                            else:
+                                                self.logger.warning(
+                                                    f"User {chat.author_details.display_name} tried to use mods only command {command}"
+                                                )
+                                        elif command_props["super_chat_only"]:
+                                            if (
+                                                chat.author_details.is_chat_owner
+                                                or chat.author_details.is_chat_moderator
+                                            ):
+                                                await command_func(self, args)
+                                        else:
+                                            await command_func(self, args)
+                        if (
+                            chat.snippet.type == 15
+                            and chat.snippet.author_channel_id != self.live_channel_id
+                        ):  # superChatEvent
+                            published_at = datetime.datetime.fromisoformat(
+                                chat.snippet.published_at.replace("Z", "+00:00")
+                            )
+                            if published_at > self.started_at:
+                                message = chat.snippet.super_chat_details.user_comment
+                                if message.startswith("!!"):
+                                    command = message[2:].split(" ")[0]
+                                    args = message[2:].split(" ")[1:]
+                                    if command in COMMANDS:
+                                        self.logger.info(
+                                            f"User {chat.author_details.display_name} issued command {command} {' '.join(args)}"
+                                        )
+                                        command_props = COMMANDS[command]
+                                        command_func = command_props["func"]
+                                        if command_props["owner_only"]:
+                                            if chat.author_details.is_chat_owner:
+                                                await command_func(self, args)
+                                            else:
+                                                self.logger.warning(
+                                                    f"User {chat.author_details.display_name} tried to use owner only command {command}"
+                                                )
+                                        elif command_props["mods_only"]:
+                                            if (
+                                                chat.author_details.is_chat_moderator
+                                                or chat.author_details.is_chat_owner
+                                            ):
+                                                await command_func(self, args)
+                                            else:
+                                                self.logger.warning(
+                                                    f"User {chat.author_details.display_name} tried to use mods only command {command}"
+                                                )
+                                        elif command_props["super_chat_only"]:
+                                            if (
+                                                chat.author_details.is_chat_owner
+                                                or chat.author_details.is_chat_moderator
+                                                or chat.super_chat_details.tier >= 3
+                                            ):
+                                                await command_func(self, args)
+                                        else:
+                                            await command_func(self, args)
+
                     next_page_token = response.next_page_token
 
 

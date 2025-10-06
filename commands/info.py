@@ -21,12 +21,14 @@ async def info_command(bot, _):
     else:
         logger.warning("Failed to get VM screen")
     await bot.send_message(
-        f"Memory: {info['memory']} MB\n"
-        f"CPU: {info['cpu']} cores\n"
-        f"Resolution: {size[0]}x{size[1]}\n"
+        f"Memory: {info['memory']} MB, "
+        f"CPU: {info['cpu']} cores, "
+        f"Resolution: {size[0]}x{size[1]}, "
         if size is not None
         else "Unavailable"
-        f"CD-ROM: {info['cdrom'] or 'None'}\n"
-        f"Floppy: {info['floppy'] or 'None'}\n"
+    )
+    await bot.send_message(
+        f"CD-ROM: {info['cdrom'] or 'None'}, "
+        f"Floppy: {info['floppy'] or 'None'}, "
         f"OS: {info['os']}"
     )

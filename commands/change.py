@@ -6,7 +6,7 @@ from utils.logger import get_logger
 logger = get_logger("Change")
 
 
-@command_register(name="change")
+@command_register(name="change", mods_only=True)
 @handle_exception(logger=logger)
 async def change_command(bot, args):
     logger.debug("Change command requested")
@@ -98,7 +98,13 @@ async def change_image_command(bot, args):
             await bot.send_message(f"{type} image for this OS not found.")
             return
 
-        await bot.send_message(f"Available {type} images: {', '.join(os_preset[type])}")
+        image_lists = os_preset[type] + (["gparted.iso"] if type == "cdrom" else [])
+        if len(image_lists) > 10:
+            await bot.send_message(f"Available {type} images:")
+            for i in range(0, len(image_lists), 10):
+                await bot.send_message(", ".join(image_lists[i : i + 10]))
+        else:
+            await bot.send_message(f"Available {type} images: {', '.join(image_lists)}")
         return
     image = args[1]
 
@@ -121,7 +127,7 @@ async def change_image_command(bot, args):
         index = os_preset[type].index(image)  # type: ignore
         await bot.set_device(os_preset[type][index], type)  # type: ignore
     except ValueError:
-        if type == "cdrom" and image == "half-life.iso":
+        if type == "cdrom" and (image == "half-life.iso" or image == "gparted.iso"):
             await bot.set_device(image, type)
         else:
             logger.warning(f"Image {image} not found")

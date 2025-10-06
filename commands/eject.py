@@ -5,7 +5,7 @@ from utils.logger import get_logger
 logger = get_logger("Eject")
 
 
-@command_register(name="eject")
+@command_register(name="eject", mods_only=True)
 @handle_exception(logger=logger)
 async def eject_command(bot, args):
     if len(args) < 1:

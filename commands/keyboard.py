@@ -94,8 +94,10 @@ async def type_command(bot, args):
 @command_register(name="key")
 @handle_exception(logger=logger)
 async def key_command(bot, args):
-    if len(args) < 1:
-        await bot.send_message("No subcommand provided. Use `!!help` for help.")
+    if len(args) < 1 or args[0] not in ["down", "up"]:
+        await bot.send_message(
+            "Usage: !!key <down|up> <key>. Presses or releases key(s)."
+        )
         return
     command = args[0]
     shifted_args = args[1:]
