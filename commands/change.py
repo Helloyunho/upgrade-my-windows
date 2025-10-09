@@ -127,7 +127,7 @@ async def change_image_command(bot, args):
         index = os_preset[type].index(image)  # type: ignore
         await bot.set_device(os_preset[type][index], type)  # type: ignore
     except ValueError:
-        if type == "cdrom" and (image == "half-life.iso" or image == "gparted.iso"):
+        if type == "cdrom" and (image == "puttzoo.iso" or image == "gparted.iso"):
             await bot.set_device(image, type)
         else:
             logger.warning(f"Image {image} not found")

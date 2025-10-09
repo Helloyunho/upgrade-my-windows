@@ -241,7 +241,7 @@ class UpgradeMyWindowsBot:
                 self.logger.warning("Failed to get VM info")
                 return
             if path:
-                if path == "half-life.iso" or path == "gparted.iso":
+                if path == "puttzoo.iso" or path == "gparted.iso":
                     path = str(self.image_path / path)
                 else:
                     path = str(self.image_path / info["os"] / path)
